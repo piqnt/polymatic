@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ES6",
+    "allowJs": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    "strict": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": false,
+    
+    "module": "ES6",
+    "outDir": "dist",
+    "sourceMap": true,
+
+    "noEmit": true,
+
+    "lib": ["ES6", "dom", "dom.iterable"],
+
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["docs", "dist", "node_modules"]
+}

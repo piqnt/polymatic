@@ -1,0 +1,65 @@
+{
+  "name": "polymatic",
+  "version": "0.0.5",
+  "description": "Minimalist framework for building games and interactive visual application",
+  "keywords": [
+    "framework",
+    "engine",
+    "game",
+    "interactive",
+    "visual",
+    "minimalist",
+    "middleware",
+    "ecs",
+    "entity-component-system",
+    "data-driven"
+  ],
+  "author": "Ali Shakiba",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/polymatic.js",
+  "module": "./dist/polymatic.js",
+  "browser": "./dist/polymatic.umd.cjs",
+  "jsdelivr": "./dist/polymatic.umd.cjs",
+  "unpkg": "./dist/polymatic.umd.cjs",
+  "types": "./dist/polymatic.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/polymatic.d.ts",
+      "import": "./dist/polymatic.js",
+      "require": "./dist/polymatic.umd.cjs"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.27.12",
+    "@types/node": "^22.10.7",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "rollup-plugin-license": "^3.5.3",
+    "tslib": "^2.8.1",
+    "typescript": "^5.6.2",
+    "vite": "^6.0.3",
+    "vite-plugin-dts-bundle-generator": "^2.0.7",
+    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-typescript": "^1.0.4",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "watch": "vite build --watch",
+    "changeset": "changeset",
+    "bump": "changeset version",
+    "release": "changeset publish"
+  }
+}
