@@ -4,6 +4,10 @@
 
 Minimalist middleware framework for making games and interactive visual application
 
+## Tutorials and Examples
+
+[Watermelon Game - 10 Minutes Polymatic Tutorial](https://github.com/shakiba/polymatic-example-watermelon)
+
 ## Community
 
 #### [Discord](https://discord.gg/f4r7QWqaK4)
