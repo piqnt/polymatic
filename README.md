@@ -6,7 +6,8 @@ Minimalist middleware framework for making games and interactive visual applicat
 
 ## Examples
 
-[Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)
+[Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)  
+[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball)
 
 ## Community
 
