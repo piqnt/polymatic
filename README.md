@@ -48,7 +48,7 @@ class Main extends Middleware {
 
 #### Context
 
-Context is an object which can be accessed by all middlewares in an application. It can be used be to store game objects and state. You can use any object as context.
+Context is an object which can be accessed by all middlewares in an application. It can be used be to store game entities and state. You can use any object as context.
 
 #### Events
 
@@ -88,18 +88,18 @@ class Main extends Middleware {
 
 ### Data Driver
 
-Middlewares share game objects in the context. A middleware might have internal representation of game objects to implement new behavior for a game object. For example in a user-interface middleware we create visual elements (such as sprite, or html element), or in physics simulation we need to add new bodies to the physics simulation for each game object. Data drivers are used by middlewares to map game objects to middleware components.
+Middlewares share game entities and state in the context. A middleware might have internal representation of game entities to implement new behavior for an entity. For example in a user-interface middleware we create visual elements (such as sprite, or svg element), or in physics middleware we create and add new bodies to the physics simulation for each game entity. Data drivers are used by middlewares to map game entities to middleware components.
 
-To use data-drivers we first create a Dataset to track objects, and then add Drivers to the dataset to map components.
+To use data-drivers we first create a Dataset to track game entities, and then add Driver to the dataset to map components.
 
 #### Dataset
 
-Dataset needs to uniquely identify objects between updates, so it requires a key function. We can create a dataset by extending the Dataset class, or using the `Dataset.create` method:
+Dataset needs to uniquely identify entities between updates, so it requires a key function. We can create a dataset by extending the Dataset class, or using the `Dataset.create` method:
 
 ```ts
 // create dataset
 const dataset = Dataset.create({
-  key: (object) => object.key,
+  key: (entity) => entity.key,
 });
 
 // add driver to dataset
@@ -113,25 +113,25 @@ dataset.data([...]);
 #### Driver
 
 To create a Driver we need to implement filter, enter, update and exit functions. When we assign new data to a dataset, these functions are called on all drivers that listen to the dataset:
-- `filter`: select objects that a driver should handle
-- `enter`: called when new object is added to the dataset
-- `update`: called for existing objects and new objects
-- `exit`: called when an object is removed from the dataset
+- `filter`: select entities that a driver should handle
+- `enter`: called when new entity is added to the dataset
+- `update`: called for existing entities and new entities
+- `exit`: called when an entity is removed from the dataset
 
 We can create a driver by extending the Driver class, or using the `Driver.create` method:
 
 ```ts
 const driver = Driver.create<Fruit, Element>({
-  filter: (data) => data.type == "fruit",
-  enter: (data) => {
+  filter: (entity) => data.type == "fruit",
+  enter: (entity) => {
     // create new svg element, or add physics body
     return component;
   },
-  update: (data, component) => {
+  update: (entity, component) => {
     // in the ui middleware update the svg element
-    // in the physics middleware copy body position to data object
+    // in the physics middleware copy body position to data entity
   },
-  exit: (data, component) => {
+  exit: (entity, component) => {
     // remove the svg element or physics body
   },
 });
