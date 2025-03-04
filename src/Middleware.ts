@@ -35,70 +35,73 @@ export interface MiddlewareInterface<S> {
 }
 
 export class Middleware<S = object> implements MiddlewareInterface<S> {
-  protected handlers: Record<string, EventHandler> = {};
-  protected children: Middleware<DeepPartial<S>>[] = [];
-  protected parent: MiddlewareInterface<S> = null;
+  /** @internal @hidden */
+  __handlers: Record<string, EventHandler> = {};
+  /** @internal @hidden */
+  __children: Middleware<DeepPartial<S>>[] = [];
+  /** @internal @hidden */
+  __parent: MiddlewareInterface<S> = null;
 
   get activated() {
-    return this.parent && this.parent.activated;
+    return this.__parent && this.__parent.activated;
   }
 
   /** Add a child middleware */
   use(middleware: Middleware<DeepPartial<S>>) {
-    const index = this.children.indexOf(middleware);
+    const index = this.__children.indexOf(middleware);
     if (index !== -1) return;
 
     if (this.activated) {
       middleware.__attach(this);
     }
-    this.children.push(middleware);
+    this.__children.push(middleware);
   }
 
   unuse(middleware: Middleware<DeepPartial<S>>) {
-    const index = this.children.indexOf(middleware);
+    const index = this.__children.indexOf(middleware);
     if (index !== -1) {
-      this.children.splice(index, 1);
+      this.__children.splice(index, 1);
       middleware?.__detach();
     }
   }
 
   /** @internal @hidden */
   __attach(parent: MiddlewareInterface<S>) {
-    if (this.parent) {
+    if (this.__parent) {
       return;
     }
-    this.parent = parent;
+    this.__parent = parent;
     debugMiddleware("activate", "+", this.constructor.name);
     this._handle("activate");
-    for (let i = 0; i < this.children.length; i++) {
-      this.children[i].__attach(this);
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__attach(this);
     }
   }
 
   /** @internal @hidden */
   __detach() {
-    if (!this.parent) {
+    if (!this.__parent) {
       return;
     }
     debugMiddleware("deactivate", "-", this.constructor.name);
     this._handle("deactivate");
-    for (let i = 0; i < this.children.length; i++) {
-      this.children[i].__detach();
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__detach();
     }
-    this.parent = null;
+    this.__parent = null;
   }
 
   get context(): S {
-    if (this.parent) {
-      return this.parent.context;
+    if (this.__parent) {
+      return this.__parent.context;
     } else {
       return null;
     }
   }
 
   setContext(setter: ContextSetter<S>) {
-    if (this.parent) {
-      this.parent.setContext(setter);
+    if (this.__parent) {
+      this.__parent.setContext(setter);
     } else {
       console.error("Middleware is not activated");
     }
@@ -108,8 +111,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * Add an event handler
    */
   on(type: string, handler: (ev: any) => any): void {
-    if (this.handlers[type]) throw Error(`Handler for ${type} already exists`);
-    this.handlers[type] = handler;
+    if (this.__handlers[type]) throw Error(`Handler for ${type} already exists`);
+    this.__handlers[type] = handler;
   }
 
   /**
@@ -121,8 +124,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     const stop = this._handle(type, ev);
     if (stop) return true;
 
-    for (let i = 0; i < this.children.length; i++) {
-      const stop = this.children[i]._consume(type, ev);
+    for (let i = 0; i < this.__children.length; i++) {
+      const stop = this.__children[i]._consume(type, ev);
       if (stop) return true;
     }
     return false;
@@ -132,7 +135,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * Call event handler registered on this middleware
    */
   _handle(type: string, ev?: any): boolean {
-    const handler = this.handlers && this.handlers[type];
+    const handler = this.__handlers && this.__handlers[type];
     if (handler) {
       if (typeof handler === "function") {
         debugEvent(type, "→", this.constructor.name, ev);
@@ -150,8 +153,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   emit(type: string, ev?: any): void {
     debugEvent(type, "↑", this.constructor.name, ev);
 
-    if (this.parent) {
-      this.parent.emit(type, ev);
+    if (this.__parent) {
+      this.__parent.emit(type, ev);
     } else {
       console.error(Error("Not active!"));
     }
@@ -164,8 +167,10 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
 }
 
 export class Runtime<S = object> extends Middleware<S> {
-  protected handlers: Record<string, EventHandler> = {};
-  protected children: Middleware<DeepPartial<S>>[] = [];
+  /** @internal @hidden */
+  __handlers: Record<string, EventHandler> = {};
+  /** @internal @hidden */
+  __children: Middleware<DeepPartial<S>>[] = [];
 
   private _activated = false;
   get activated() {
@@ -183,8 +188,8 @@ export class Runtime<S = object> extends Middleware<S> {
 
     this._activated = true;
     this._handle("activate");
-    for (let i = 0; i < this.children.length; i++) {
-      this.children[i].__attach(this);
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__attach(this);
     }
   }
 
@@ -194,8 +199,8 @@ export class Runtime<S = object> extends Middleware<S> {
     }
     this._activated = false;
     this._handle("deactivate");
-    for (let i = 0; i < this.children.length; i++) {
-      this.children[i].__detach();
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__detach();
     }
   }
 
