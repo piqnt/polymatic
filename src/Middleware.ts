@@ -236,4 +236,17 @@ export class Runtime<S = object> extends Middleware<S> {
     manager.use(middleware);
     manager._activate(context);
   }
+
+  static deactivate(middleware: Middleware) {
+    if ("_deactivate" in middleware && typeof middleware._deactivate === "function") {
+      middleware._deactivate();
+      return true;
+    }
+    const parent = middleware.__parent;
+    if (parent && "_deactivate" in parent && typeof parent._deactivate === "function") {
+      parent._deactivate();
+      return true;
+    }
+    return false;
+  }
 }
