@@ -63,7 +63,7 @@ export abstract class Dataset<E extends object> {
   /** @internal */ _enterBuffer: E[] = [];
   /** @internal */ _exitBuffer: E[] = [];
 
-  data(data: (E | null)[]) {
+  data(data: (E | undefined | null)[]) {
     // todo: use diff-match-patch instead of map?
     if (!Array.isArray(data)) throw "Invalid data: " + data;
 
