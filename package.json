@@ -1,6 +1,6 @@
 {
   "name": "polymatic",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Minimalist framework for building games and interactive visual application",
   "keywords": [
     "framework",
@@ -16,6 +16,11 @@
   ],
   "author": "Ali Shakiba",
   "license": "MIT",
+  "homepage": "https://github.com/piqnt/polymatic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/piqnt/polymatic.git"
+  },
   "publishConfig": {
     "access": "public"
   },
