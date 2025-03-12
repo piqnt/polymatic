@@ -135,6 +135,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * Call event handler registered on this middleware
    */
   _handle(type: string, ev?: any): boolean {
+    if (!this.activated) return;
+
     const handler = this.__handlers && this.__handlers[type];
     if (handler) {
       if (typeof handler === "function") {
@@ -151,6 +153,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * "bubble" an event to parent, pass to parent until it reaches the top.
    */
   emit(type: string, ev?: any): void {
+    if (!this.activated) return;
+
     debugEvent(type, "↑", this.constructor.name, ev);
 
     if (this.__parent) {
