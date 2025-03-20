@@ -7,7 +7,7 @@ Minimalist middleware framework for making games and interactive visual applicat
 ## Examples
 
 [Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)  
-[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball)
+[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multipleayer including server and client implementation with Socket.io, Planck, SVG
 
 ## Community
 
@@ -32,7 +32,7 @@ Minimalist middleware framework for making games and interactive visual applicat
   <script src="//cdn.jsdelivr.net/npm/polymatic@0.0"></script>
 ```
 
-## User Guide
+## User Guide - 5 Minutes
 
 Polymatic is a minimalist middleware framework. It does not have game loop, rendering, physics, or any other game specific functions. Instead, it provides a simple way to implement your game functions, and integrate other libraries. Polymatic is designed to use other libraries for rendering, sound, physics, storage, networking, etc.
 
