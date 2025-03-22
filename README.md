@@ -7,7 +7,8 @@ Minimalist middleware framework for making games and interactive visual applicat
 ## Examples
 
 [Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)  
-[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including io server and client implementation with Socket.io, Planck, SVG
+[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
+[Air Control Traffic](https://github.com/piqnt/polymatic-example-air-traffic)  
 
 ## Community
 
@@ -38,7 +39,7 @@ Polymatic is a minimalist middleware framework. It does not have game loop, rend
 
 Polymatic is inspired by ECS (entity-component-system) architecture: *middlewares* can be used to implement systems, and *data-drivers* can be used to decouple data (entity) from behavior (component). However unlike mainstream ECS frameworks, Polymatic does not manage your data, and doesn't have queries.
 
-Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and envrinments.
+Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and environments.
 
 ### Middleware
 
