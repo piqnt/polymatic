@@ -7,7 +7,7 @@ Minimalist middleware framework for making games and interactive visual applicat
 ## Examples
 
 [Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)  
-[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multipleayer including server and client implementation with Socket.io, Planck, SVG
+[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including io server and client implementation with Socket.io, Planck, SVG
 
 ## Community
 
