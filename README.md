@@ -6,9 +6,10 @@ Minimalist middleware framework for making games and interactive visual applicat
 
 ## Examples
 
-[Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon)  
+[Ocean](https://github.com/piqnt/polymatic-example-ocean/settings) - Polymatic, Stage.js  
+[Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon) - Polymatic, Planck/Box2D, SVG  
 [8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
-[Air Traffic Control](https://github.com/piqnt/polymatic-example-air-traffic)  
+[Air Traffic Control](https://github.com/piqnt/polymatic-example-air-traffic) - Polymatic, Stage.js  
 
 ## Community
 
