@@ -49,7 +49,7 @@ export abstract class Dataset<E extends object> {
 
   abstract key(d: E): string;
 
-  addDriver<R>(driver: Driver<E, R>) {
+  addDriver<R>(driver: Driver<E, R>): Dataset<E> {
     const isValid = driver && driver.filter && driver.enter && driver.exit && driver.update;
     if (!isValid) throw "Invalid driver: " + driver;
     this._drivers.push(driver);
