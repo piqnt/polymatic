@@ -20,7 +20,7 @@ export abstract class Driver<E extends object, C> {
   abstract exit(d: E, ref: C): void;
   abstract update(d: E, ref: C): void;
 
-  static create<E extends object, C>(config: DriverConfig<E, C>) {
+  static create<E extends object, C>(config: DriverConfig<E, C>): Driver<E, C> {
     return new (class extends Driver<E, C> {
       filter = config.filter;
       enter = config.enter;
@@ -39,7 +39,7 @@ export interface DatasetConfig<D> {
 }
 
 export abstract class Dataset<E extends object> {
-  static create<E extends object>(config: DatasetConfig<E>) {
+  static create<E extends object>(config: DatasetConfig<E>): Dataset<E> {
     return new (class extends Dataset<E> {
       key = config.key;
     })();
