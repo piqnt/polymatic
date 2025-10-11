@@ -1,5 +1,12 @@
 # polymatic
 
+## 0.0.9
+
+### Patch Changes
+
+- 3b43a72: Fix addDriver return type
+- 69edfb1: Fix create factory return type
+
 ## 0.0.8
 
 ### Patch Changes
