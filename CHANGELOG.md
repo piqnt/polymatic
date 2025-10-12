@@ -1,5 +1,11 @@
 # polymatic
 
+## 0.0.10
+
+### Patch Changes
+
+- 666ff13: Add drivers to dataset config
+
 ## 0.0.9
 
 ### Patch Changes
