@@ -93,42 +93,24 @@ class Main extends Middleware {
 }
 ```
 
-### Data Driver
+### Working with data
 
-Middlewares share game entities and state in the context. A middleware might have internal representation of game entities to implement new behavior for an entity. For example in a user-interface middleware we create visual elements (such as sprite, or svg element), or in physics middleware we create and add new bodies to the physics simulation for each game entity. Data drivers are used by middlewares to map game entities to middleware components.
+Middlewares share game entities and state in the context. A middleware might have internal representation of game entities to implement new behavior for an entity. For example, in a user-interface middleware we create visual elements such as sprite, or svg element, or in a physics middleware we create and add new bodies to the physics simulation for each game entity. Binder and drivers are used by middlewares to map shared entities to middleware components.
 
-To use data-drivers we first create a Dataset to track game entities, and then add Driver to the dataset to map components.
-
-#### Dataset
-
-Dataset needs to uniquely identify entities between updates, so it requires a key function. We can create a dataset by extending the Dataset class, or using the `Dataset.create` method:
-
-```ts
-// create dataset
-const dataset = Dataset.create({
-  key: (entity) => entity.key,
-});
-
-// add driver to dataset
-dataset.addDriver(driver);
-
-// assign data to dataset
-// this will call driver functions
-dataset.data([...]);
-```
+Drivers are used to implement new behavior for entities. A driver is responsible for creating, updating and removing components for entities that it handles. A binder is used to track entities and call driver functions when entities are added, updated or removed.
 
 #### Driver
 
-To create a Driver we need to implement filter, enter, update and exit functions. When we assign new data to a dataset, these functions are called on all drivers that listen to the dataset:
+To create a Driver we need to implement filter, enter, update and exit functions. When we pass new data to a binder, these functions are called on all drivers that are added to the binder:
 - `filter`: select entities that a driver should handle
-- `enter`: called when new entity is added to the dataset
+- `enter`: called when new entity is added to the data
 - `update`: called for existing entities and new entities
-- `exit`: called when an entity is removed from the dataset
+- `exit`: called when an entity is removed from the data
 
 We can create a driver by extending the Driver class, or using the `Driver.create` method:
 
 ```ts
-const driver = Driver.create<Fruit, Element>({
+const fruitRenderDriver = Driver.create<Fruit, Element>({
   filter: (entity) => data.type == "fruit",
   enter: (entity) => {
     // create new svg element, or add physics body
@@ -142,10 +124,27 @@ const driver = Driver.create<Fruit, Element>({
     // remove the svg element or physics body
   },
 });
+```
 
-dataset.addDriver(driver);
+#### Binder
+
+Binder needs to uniquely identify entities between updates, so it requires a key function. We can create a binder by extending the Binder class, or using the `Binder.create` method:
+
+```ts
+// create binder with key function and drivers
+const renderBinder = Binder.create({
+  key: (entity) => entity.key,
+  drivers: [fruitRenderDriver],
+});
+```
+
+Now we can pass data to binder, and it will call driver functions:
+```ts
+// in rendering loop
+// pass entities to binder
+// this will call driver functions
+renderBinder.data(entities);
 ```
 
 ## License
 Polymatic is licensed under the MIT License. You can use it for free in your projects, both open-source and commercial. License file is in the root directory of the project source code.
-

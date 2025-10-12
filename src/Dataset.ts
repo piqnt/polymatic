@@ -34,14 +34,14 @@ export abstract class Driver<E extends object, C> {
   }
 }
 
-export interface DatasetConfig<E extends object> {
+export interface BinderConfig<E extends object> {
   key: (e: E) => string;
   drivers?: Driver<E, any>[];
 }
 
-export abstract class Dataset<E extends object> {
-  static create<E extends object>(config: DatasetConfig<E>): Dataset<E> {
-    return new (class extends Dataset<E> {
+export abstract class Binder<E extends object> {
+  static create<E extends object>(config: BinderConfig<E>): Binder<E> {
+    return new (class extends Binder<E> {
       key = config.key;
       _drivers = config.drivers ? [...config.drivers] : [];
     })();
@@ -51,7 +51,7 @@ export abstract class Dataset<E extends object> {
 
   abstract key(d: E): string;
 
-  addDriver<R>(driver: Driver<E, R>): Dataset<E> {
+  addDriver<R>(driver: Driver<E, R>): Binder<E> {
     const isValid = driver && driver.filter && driver.enter && driver.exit && driver.update;
     if (!isValid) throw "Invalid driver: " + driver;
     this._drivers.push(driver);
@@ -137,3 +137,6 @@ export abstract class Dataset<E extends object> {
     this._updateBuffer.length = 0;
   }
 }
+
+// todo: mark as deprecated
+export { Binder as Dataset };
