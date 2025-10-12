@@ -34,14 +34,16 @@ export abstract class Driver<E extends object, C> {
   }
 }
 
-export interface DatasetConfig<D> {
-  key: (d: D) => string;
+export interface DatasetConfig<E extends object> {
+  key: (e: E) => string;
+  drivers?: Driver<E, any>[];
 }
 
 export abstract class Dataset<E extends object> {
   static create<E extends object>(config: DatasetConfig<E>): Dataset<E> {
     return new (class extends Dataset<E> {
       key = config.key;
+      _drivers = config.drivers ? [...config.drivers] : [];
     })();
   }
 
