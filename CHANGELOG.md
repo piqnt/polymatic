@@ -1,5 +1,11 @@
 # polymatic
 
+## 0.0.11
+
+### Patch Changes
+
+- ac05047: Rename Dataset to Binder
+
 ## 0.0.10
 
 ### Patch Changes
