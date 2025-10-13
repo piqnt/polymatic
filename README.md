@@ -2,7 +2,7 @@
   <img width="300px" height="300px" src="https://static.piqnt.com/polymatic/logo-text-sqaure.svg" />
 </p>
 
-Minimalist middleware framework for making games and interactive visual application
+Minimalist middleware framework for making modular games and interactive visual application
 
 ## Examples
 
@@ -36,9 +36,9 @@ Minimalist middleware framework for making games and interactive visual applicat
 
 ## User Guide - 5 Minutes
 
-Polymatic is a minimalist middleware framework. It does not have game loop, rendering, physics, or any other game specific functions. Instead, it provides a simple way to implement your game functions, and integrate other libraries. Polymatic is designed to use other libraries for rendering, sound, physics, storage, networking, etc.
+Polymatic is a lightweight framework for building modular applications, and easily integrating other libraries. It does not include built-in frame-loop, rendering, physics, or any other game specific functions. Instead, it provides a simple and modular way to implement your game, and integrate other libraries, such as rendering, sound, physics, storage, networking, etc.
 
-Polymatic is inspired by ECS (entity-component-system) architecture: *middlewares* can be used to implement systems, and *data-drivers* can be used to decouple data (entity) from behavior (component). However unlike mainstream ECS frameworks, Polymatic does not manage your data, and doesn't have queries.
+Polymatic middlewares are similar to systems in ECS (entity-component-system) architecture, and data binders and drivers can be used to decouple data (entity) from behavior (component). However unlike mainstream ECS frameworks, Polymatic does not manage your data, and doesn't have queries.
 
 Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and environments.
 
