@@ -38,8 +38,6 @@ Minimalist middleware framework for making modular games and interactive visual 
 
 Polymatic is a lightweight framework for building modular applications, and easily integrating other libraries. It does not include built-in frame-loop, rendering, physics, or any other game specific functions. Instead, it provides a simple and modular way to implement your game, and integrate other libraries, such as rendering, sound, physics, storage, networking, etc.
 
-Polymatic middlewares are similar to systems in ECS (entity-component-system) architecture, and data binders and drivers can be used to decouple data (entity) from behavior (component). However unlike mainstream ECS frameworks, Polymatic does not manage your data, and doesn't have queries.
-
 Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and environments.
 
 ### Middleware
@@ -56,6 +54,19 @@ class Main extends Middleware {
 #### Context
 
 Context is an object which can be accessed by all middlewares in an application. It can be used be to store game entities and state. You can use any object as context.
+
+```ts
+
+class GameContext {
+  score: number = 0;
+}
+
+class Main extends Middleware<GameContext> {
+  handleGameover() {
+    console.log(this.context.score); // access context
+  }
+}
+```
 
 #### Events
 
@@ -76,7 +87,7 @@ To start a polymatic application we need to activate the entry middleware. To ac
   Runtime.activate(new Main(), new MainContext());
 ```
 
-A middleware can communicate with other middlewares and access context object if it is activated. All middlewares that are used by an activated middleware are also activated.
+A middleware can communicate with other middlewares and access context object only if it is activated. All middlewares that are used by an activated middleware are also activated.
 
 When a middleware is activated it will receive "activate" event, and when it is deactivated it will receive "deactivate" event. You could use them to initialize and cleanup resources.
 
