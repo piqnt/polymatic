@@ -1,27 +1,45 @@
 name: NPM Publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      publish_dry_run:
-        description: 'Dry Run'
-        required: false
-        type: boolean
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+  
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
       id-token: write
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
-      - run: npm run build
-      - run: npm publish --provenance ${{!github.event.inputs.publish_dry_run}} --dry-run ${{github.event.inputs.publish_dry_run}}
+          node-version: '24.x'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Package
+        run: npm run build
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: npm run release
+          version: npm run bump
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm_publish_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
