@@ -1,5 +1,12 @@
 # polymatic
 
+## 0.0.12
+
+### Patch Changes
+
+- 712faca: Add Provenance statement to npm package
+- 0a27dd0: Add experimental Middleware.\_swap
+
 ## 0.0.11
 
 ### Patch Changes
