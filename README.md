@@ -2,14 +2,20 @@
   <img width="300px" height="300px" src="https://static.piqnt.com/polymatic/logo-text-sqaure.svg" />
 </p>
 
-Minimalist middleware framework for making modular games and interactive visual application
+Minimalist middleware framework for making modular games and interactive visual applications
 
 ## Examples
 
 [Ocean](https://github.com/piqnt/polymatic-example-ocean/) - Polymatic, Stage.js  
 [Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon) - Polymatic, Planck/Box2D, SVG  
 [8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
+[Game of Life](https://github.com/piqnt/polymatic-example-life) - Polymatic, Stage.js, made with Grok Code  
 [Air Traffic Control](https://github.com/piqnt/polymatic-example-air-traffic) - Polymatic, Stage.js  
+[Same Game](https://github.com/piqnt/polymatic-example-samegame) - Polymatic, Stage.js  
+[Tic Tac Toe](https://github.com/piqnt/polymatic-example-tictactoe) - Polymatic, Stage.js  
+[Orbital Defense](https://github.com/piqnt/polymatic-example-orbit) - Polymatic, Stage.js  
+[Drone](https://github.com/piqnt/polymatic-example-drone) - Polymatic, Stage.js  
+
 
 ## Community
 
