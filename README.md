@@ -7,6 +7,7 @@ Minimalist middleware framework for making modular games and interactive visual 
 ## Examples
 
 [Ocean](https://github.com/piqnt/polymatic-example-ocean/) - Polymatic, Stage.js  
+[Tile Box](https://github.com/piqnt/polymatic-example-tilebox) - Polymatic, Stage.js  
 [Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon) - Polymatic, Planck/Box2D, SVG  
 [8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
 [Game of Life](https://github.com/piqnt/polymatic-example-life) - Polymatic, Stage.js, made with Grok Code  
