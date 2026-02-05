@@ -6,16 +6,17 @@ Minimalist middleware framework for making modular games and interactive visual 
 
 ## Examples
 
-[Ocean](https://github.com/piqnt/polymatic-example-ocean/) - Polymatic, Stage.js  
-[Tile Box](https://github.com/piqnt/polymatic-example-tilebox) - Polymatic, Stage.js  
-[Watermelon Game](https://github.com/piqnt/polymatic-example-watermelon) - Polymatic, Planck/Box2D, SVG  
-[8-Ball Pool](https://github.com/piqnt/polymatic-example-eight-ball) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
-[Game of Life](https://github.com/piqnt/polymatic-example-life) - Polymatic, Stage.js, made with Grok Code  
-[Air Traffic Control](https://github.com/piqnt/polymatic-example-air-traffic) - Polymatic, Stage.js  
-[Same Game](https://github.com/piqnt/polymatic-example-samegame) - Polymatic, Stage.js  
-[Tic Tac Toe](https://github.com/piqnt/polymatic-example-tictactoe) - Polymatic, Stage.js  
-[Orbital Defense](https://github.com/piqnt/polymatic-example-orbit) - Polymatic, Stage.js  
-[Drone](https://github.com/piqnt/polymatic-example-drone) - Polymatic, Stage.js  
+Six ([Play](https://piqnt.github.io/polymatic-example-six/), [Source](https://github.com/piqnt/polymatic-example-six/)) - Hexagonal tile-matching game, made with Polymatic, Stage.js  
+Ocean ([Play](https://piqnt.github.io/polymatic-example-ocean/), [Source](https://github.com/piqnt/polymatic-example-ocean/)) - Ocean diving runner game, made with Polymatic, Stage.js  
+Tile Box ([Play](https://piqnt.github.io/polymatic-example-tilebox/), [Source](https://github.com/piqnt/polymatic-example-tilebox)) - Polymatic, Stage.js  
+Watermelon Game ([Play](https://piqnt.github.io/polymatic-example-watermelon/), [Source](https://github.com/piqnt/polymatic-example-watermelon)) - Polymatic, Planck/Box2D, SVG  
+8-Ball Pool ([Play](https://eight-ball.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-eight-ball)) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
+Game of Life ([Play](https://piqnt.github.io/polymatic-example-life/), [Source](https://github.com/piqnt/polymatic-example-life)) - Polymatic, Stage.js, made with Grok Code  
+Air Traffic Control ([Play](https://piqnt.github.io/polymatic-example-traffic/), [Source](https://github.com/piqnt/polymatic-example-traffic)) - Polymatic, Stage.js  
+Same Game ([Play](https://piqnt.github.io/polymatic-example-samegame/), [Source](https://github.com/piqnt/polymatic-example-samegame)) - Polymatic, Stage.js  
+Tic Tac Toe ([Play](https://piqnt.github.io/polymatic-example-tictactoe/), [Source](https://github.com/piqnt/polymatic-example-tictactoe)) - Polymatic, Stage.js  
+Orbital Defense ([Play](https://piqnt.github.io/polymatic-example-orbit/), [Source](https://github.com/piqnt/polymatic-example-orbit)) - Polymatic, Stage.js  
+Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://github.com/piqnt/polymatic-example-fly)) - Polymatic, Stage.js  
 
 
 ## Community
@@ -44,6 +45,8 @@ Minimalist middleware framework for making modular games and interactive visual 
 ## User Guide - 5 Minutes
 
 Polymatic is a lightweight framework for building modular applications, and easily integrating other libraries. It does not include built-in frame-loop, rendering, physics, or any other game specific functions. Instead, it provides a simple and modular way to implement your game, and integrate other libraries, such as rendering, sound, physics, storage, networking, etc.
+
+Polymatic API is human-friendly and AI-friendly, ideal for vibe coding.
 
 Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and environments.
 
