@@ -1,5 +1,11 @@
 # polymatic
 
+## 0.0.13
+
+### Patch Changes
+
+- a45331d: Replace Driver data() with setData()
+
 ## 0.0.12
 
 ### Patch Changes
