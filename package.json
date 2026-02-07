@@ -63,8 +63,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "watch": "vite build --watch",
-    "changeset": "changeset",
-    "bump": "changeset version",
-    "release": "changeset publish"
+    "change": "changeset",
+    "version": "changeset version",
+    "publish": "changeset publish"
   }
 }
