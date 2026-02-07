@@ -51,6 +51,7 @@ export abstract class Binder<E extends object> {
 
   abstract key(d: E): string;
 
+  /** @hidden @deprecated Use config.drivers */
   addDriver<R>(driver: Driver<E, R>): Binder<E> {
     const isValid = driver && driver.filter && driver.enter && driver.exit && driver.update;
     if (!isValid) throw "Invalid driver: " + driver;
@@ -65,7 +66,12 @@ export abstract class Binder<E extends object> {
   /** @internal */ _enterBuffer: E[] = [];
   /** @internal */ _exitBuffer: E[] = [];
 
+  /** @hidden @deprecated Use setData */
   data(data: (E | undefined | null)[]) {
+    this.setData(data);
+  }
+
+  setData(data: (E | undefined | null)[]) {
     // todo: use diff-match-patch instead of map?
     if (!Array.isArray(data)) throw "Invalid data: " + data;
 
