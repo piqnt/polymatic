@@ -6,6 +6,7 @@ Minimalist middleware framework for making modular games and interactive visual 
 
 ## Examples
 
+Pinball ([Play](https://piqnt.github.io/polymatic-example-pinball/), [Source](https://github.com/piqnt/polymatic-example-pinball/)) - Pinball game with editable svg table design, with Polymatic and Planck/Box2D physics  
 Six ([Play](https://piqnt.github.io/polymatic-example-six/), [Source](https://github.com/piqnt/polymatic-example-six/)) - Hexagonal tile-matching game, made with Polymatic, Stage.js  
 Ocean ([Play](https://piqnt.github.io/polymatic-example-ocean/), [Source](https://github.com/piqnt/polymatic-example-ocean/)) - Ocean diving runner game, made with Polymatic, Stage.js  
 Tile Box ([Play](https://piqnt.github.io/polymatic-example-tilebox/), [Source](https://github.com/piqnt/polymatic-example-tilebox)) - Polymatic, Stage.js  
@@ -17,6 +18,8 @@ Same Game ([Play](https://piqnt.github.io/polymatic-example-samegame/), [Source]
 Tic Tac Toe ([Play](https://piqnt.github.io/polymatic-example-tictactoe/), [Source](https://github.com/piqnt/polymatic-example-tictactoe)) - Polymatic, Stage.js  
 Orbital Defense ([Play](https://piqnt.github.io/polymatic-example-orbit/), [Source](https://github.com/piqnt/polymatic-example-orbit)) - Polymatic, Stage.js  
 Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://github.com/piqnt/polymatic-example-fly)) - Polymatic, Stage.js  
+
+
 
 
 ## Community
