@@ -28,6 +28,7 @@ export interface MiddlewareInterface<S> {
   get activated(): boolean;
 
   get context(): S;
+  /** @hidden @deprecated Set context directly */
   setContext(setter: ContextSetter<S>): void;
 
   on(type: string, handler: (ev: any) => any): void;
@@ -123,6 +124,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     }
   }
 
+  /** @hidden @deprecated Set context directly */
   setContext(setter: ContextSetter<S>) {
     if (this.__parent) {
       this.__parent.setContext(setter);
