@@ -44,7 +44,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   __parent: MiddlewareInterface<S> = null;
 
   get activated() {
-    return this.__parent && this.__parent.activated;
+    return this.__parent ? this.__parent.activated : false;
   }
 
   /** Add a child middleware */
