@@ -1,5 +1,13 @@
 # polymatic
 
+## 0.0.13
+
+### Patch Changes
+
+- 399d904: activated return false instead of null
+- a45331d: Replace Driver data() with setData()
+- 9c6b2bf: Deprecate setContext
+
 ## 0.0.12
 
 ### Patch Changes

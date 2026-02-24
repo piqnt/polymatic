@@ -1,5 +1,0 @@
----
-"polymatic": patch
----
-
-Deprecate setContext
