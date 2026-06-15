@@ -69,8 +69,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   /** @experimental Replace all child middlewares with provided list */
   _swap = (children: Middleware<DeepPartial<S>>[]) => {
     const current = this.__children;
-    const removed = [];
-    const added = [];
+    const removed: Middleware<DeepPartial<S>>[] = [];
+    const added: Middleware<DeepPartial<S>>[] = [];
     for (const child of children) {
       if (current.indexOf(child) === -1) {
         added.push(child);
@@ -81,12 +81,15 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
         removed.push(child);
       }
     }
-    this.__children = children;
+    this.__children.length = 0;
+    this.__children.push(...children);
     for (const child of removed) {
       child.__detach();
     }
-    for (const child of added) {
-      child.__attach(this);
+    if (this.activated) {
+      for (const child of added) {
+        child.__attach(this);
+      }
     }
   };
 
