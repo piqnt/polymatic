@@ -1,5 +1,12 @@
 # polymatic
 
+## 0.0.14
+
+### Patch Changes
+
+- 86eeb51: Change umd.cjs to umd.js to fix cdn mime-type
+- 4d0fc14: Fix \_swap
+
 ## 0.0.13
 
 ### Patch Changes
