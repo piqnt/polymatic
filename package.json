@@ -27,15 +27,15 @@
   "type": "module",
   "main": "./dist/polymatic.js",
   "module": "./dist/polymatic.js",
-  "browser": "./dist/polymatic.umd.cjs",
-  "jsdelivr": "./dist/polymatic.umd.cjs",
-  "unpkg": "./dist/polymatic.umd.cjs",
+  "browser": "./dist/polymatic.umd.js",
+  "jsdelivr": "./dist/polymatic.umd.js",
+  "unpkg": "./dist/polymatic.umd.js",
   "types": "./dist/polymatic.d.ts",
   "exports": {
     ".": {
       "types": "./dist/polymatic.d.ts",
       "import": "./dist/polymatic.js",
-      "require": "./dist/polymatic.umd.cjs"
+      "require": "./dist/polymatic.cjs"
     }
   },
   "files": [

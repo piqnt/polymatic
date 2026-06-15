@@ -10,8 +10,17 @@ export default defineConfig({
     lib: {
       entry: normalizePath(path.resolve(__dirname, "src", "index.ts")),
       name: "polymatic",
-      fileName: "polymatic",
-      formats: ["es", "umd"],
+      fileName: (format) => {
+        switch (format) {
+          case "umd":
+            return "polymatic.umd.js";
+          case "cjs":
+            return "polymatic.cjs";
+          default:
+            return "polymatic.js";
+        }
+      },
+      formats: ["es", "umd", "cjs"],
     },
     minify: false,
     sourcemap: true,
@@ -21,8 +30,7 @@ export default defineConfig({
       sourcemap: true,
       banner: getLicense(),
     }),
-    typescriptPlugin({
-    }),
+    typescriptPlugin({}),
     dtsBundleGeneratorPlugin({
       fileName: "polymatic.d.ts",
     }),
