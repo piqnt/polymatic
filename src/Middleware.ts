@@ -257,11 +257,10 @@ export class Runtime<S = object> extends Middleware<S> {
     this.contextUpdateEmitTimeout = setTimeout(this.contextUpdateEmit);
   }
 
+  private _microtask = Promise.resolve();
+
   emit(name: string, ev?: any): void {
-    // todo: use queue
-    setTimeout(() => {
-      this._consume(name, ev);
-    });
+    this._microtask.then(() => this._consume(name, ev));
   }
 
   static activate<S extends object>(middleware: Middleware<S>, context: S) {
