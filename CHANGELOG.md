@@ -1,5 +1,11 @@
 # polymatic
 
+## 0.1.0
+
+### Minor Changes
+
+- 503962c: Emit runs promise microtask instead of setTimeout
+
 ## 0.0.14
 
 ### Patch Changes
