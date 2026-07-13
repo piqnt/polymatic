@@ -20,10 +20,6 @@ Orbital Defense ([Play](https://piqnt.github.io/polymatic-example-orbit/), [Sour
 Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://github.com/piqnt/polymatic-example-fly)) - Polymatic, Stage.js  
 
 
-## Tools & Libraries
-
-[Piqnt Runtime](https://github.com/piqnt/runtime) and Testbed for Planck.js physics - Dev tools for visualizing and running Planck.js physics engine examples.
-
 
 ## Community
 
@@ -38,139 +34,198 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
   npm install polymatic
 ```
 
-#### CDN - UNPKG
-```html
-  <script src="//unpkg.com/polymatic@0.0"></script>
+```js
+  import { Middleware, Runtime } from "polymatic";
 ```
 
-#### CDN - jsDelivr
+#### ESM.RUN
 ```html
-  <script src="//cdn.jsdelivr.net/npm/polymatic@0.0"></script>
+  <script type="module">
+    // esm import, script type should be module
+    import { Middleware, Runtime } from "https://esm.run/polymatic@0.1";
+  </script>
+```
+
+#### CDN UMD - UNPKG
+```html
+  <script src="https://unpkg.com/polymatic@0.1"></script>
+  <script>
+    // global polymatic variable added via umd build
+    const { Middleware, Runtime } = polymatic;
+  </script>
+```
+
+#### CDN UMD - jsDelivr
+```html
+  <script src="https://cdn.jsdelivr.net/npm/polymatic@0.1"></script>
+    <script>
+    // global polymatic variable added via umd build
+    const { Middleware, Runtime } = polymatic;
+  </script>
 ```
 
 ## User Guide - 5 Minutes
 
-Polymatic is a lightweight framework for building modular applications, and easily integrating other libraries. It does not include built-in frame-loop, rendering, physics, or any other game specific functions. Instead, it provides a simple and modular way to implement your game, and integrate other libraries, such as rendering, sound, physics, storage, networking, etc.
+Polymatic is a minimalist framework for building games and interactive applications from small, composable units called **middlewares**. It does not include a built-in frame-loop, rendering, physics, or other game-specific features. Instead, it gives you a simple structure to organize your application logic, and to integrate any libraries you need, such as rendering, physics, sound, storage, and networking.
 
-Polymatic API is human-friendly and AI-friendly, ideal for vibe coding.
+Polymatic is a plain JavaScript library, it works in browsers and servers, and with frontend and backend development tools. The API is small and predictable, which makes it easy to use for both people and AI.
 
-Polymatic is distributed as a simple JavaScript library, and is compatible with frontend and backend development tools and environments.
+A polymatic application is built on three core ideas:
+
+- **Middleware** — a unit of application logic. Middlewares are composed into a tree using `use()`.
+- **Context** — a single object shared by all middlewares in an application. Shared state and game entities live here.
+- **Events** — how middlewares communicate. An emitted event is delivered to all middlewares in the application.
 
 ### Middleware
 
-Middlewares are the building blocks of a polymatic application. You can simplify a complex applications by breaking it down to small middlewares. Middlewares share data in the context, can send and receive events, and use other middlewares.
-
-To create a middleware simply extend the Middleware class:
+A middleware is a class that implements one part of your application, such as game logic, rendering, input, networking, or the frame-loop. To create a middleware extend the `Middleware` class:
 
 ```ts
 class Main extends Middleware {
 }
 ```
 
-#### Context
-
-Context is an object which can be accessed by all middlewares in an application. It can be used be to store game entities and state. You can use any object as context.
-
-```ts
-
-class GameContext {
-  score: number = 0;
-}
-
-class Main extends Middleware<GameContext> {
-  handleGameover() {
-    console.log(this.context.score); // access context
-  }
-}
-```
-
-#### Events
-
-Middlewares can communicate by sending and receiving events. To send an event we use the `emit` method, and to receive an event we use the `on` method.
-
-```ts
-this.emit("event-name", data);
-
-this.on("event-name", (data) => {
-});
-```
-
-#### Activation
-
-To start a polymatic application we need to activate the entry middleware. To activate a middleware we pass an instance of your application entry middleware and context object to `Runtime.activate()`:
-
-```ts
-  Runtime.activate(new Main(), new MainContext());
-```
-
-A middleware can communicate with other middlewares and access context object only if it is activated. All middlewares that are used by an activated middleware are also activated.
-
-When a middleware is activated it will receive "activate" event, and when it is deactivated it will receive "deactivate" event. You could use them to initialize and cleanup resources.
-
-#### Use
-
-To use a middleware in another middleware we use the `use` method:
+Middlewares are composed into a tree with the `use` method:
 
 ```ts
 class Main extends Middleware {
   constructor() {
     super();
     this.use(new FrameLoop());
+    this.use(new GameLogic());
+    this.use(new Renderer());
   }
 }
 ```
 
-### Working with data
+You can call `use` at any time (not only in the constructor), and remove a child middleware with `unuse`.
 
-Middlewares share game entities and state in the context. A middleware might have internal representation of game entities to implement new behavior for an entity. For example, in a user-interface middleware we create visual elements such as sprite, or svg element, or in a physics middleware we create and add new bodies to the physics simulation for each game entity. Binder and drivers are used by middlewares to map shared entities to middleware components.
+### Context
 
-Drivers are used to implement new behavior for entities. A driver is responsible for creating, updating and removing components for entities that it handles. A binder is used to track entities and call driver functions when entities are added, updated or removed.
+The context is a single object shared by the entire application, used to store shared state and game entities. You can use any object as context. You create it and pass it to `Runtime.activate` when starting the application (see Activation below).
+
+Every middleware accesses the same object through `this.context` — it is shared by reference, so changes made by one middleware are immediately visible to all others. This is the primary way middlewares share data; events are for signaling, context is for state.
+
+```ts
+class GameContext {
+  score: number = 0;
+  fruits: Fruit[] = [];
+}
+
+class GameLogic extends Middleware<GameContext> {
+  constructor() {
+    super();
+    this.on("collect-fruit", this.handleCollectFruit);
+  }
+
+  handleCollectFruit() {
+    this.context.score += 1;
+  }
+}
+```
+
+Note that `this.context` is only available while the middleware is activated.
+
+### Events
+
+Middlewares communicate by sending and receiving events. Use `emit` to send an event, and `on` to register a handler (usually in the constructor):
+
+```ts
+// in one middleware
+this.emit("game-over", { score: 21 });
+
+// in another middleware
+this.on("game-over", (ev) => {
+  console.log(ev.score);
+});
+```
+
+How events are delivered:
+
+- **Delivered to the entire application** — an emitted event first goes up to the runtime at the root, then is passed down to every activated middleware in the tree, in tree order (parents before children). Any middleware can listen to any event, regardless of which middleware emitted it — including the emitter itself.
+- **Queued, but delivered in the same frame** — `emit` does not call handlers immediately. The event is queued and delivered asynchronously, as soon as the current synchronous code finishes — still within the same frame, before the browser renders or the next `requestAnimationFrame` fires. This means the code following an `emit` call always runs before any handler receives the event.
+- **One handler per event type** — each middleware can register only one handler for a given event name (`on` throws if a handler already exists).
+- **Stopping propagation** — if a handler returns `true`, the event is not passed to any further middlewares.
+
+### Activation
+
+To start a polymatic application, pass your entry middleware and the context object to `Runtime.activate`:
+
+```ts
+Runtime.activate(new Main(), new GameContext());
+```
+
+This activates `Main` and, recursively, all middlewares it uses. A middleware can access the context and send and receive events only while it is activated.
+
+When a middleware is activated it receives the `"activate"` event, and when it is deactivated it receives the `"deactivate"` event. Use them to initialize and clean up resources:
+
+```ts
+class FrameLoop extends Middleware {
+  constructor() {
+    super();
+    this.on("activate", () => this.start());
+    this.on("deactivate", () => this.stop());
+  }
+}
+```
+
+Middlewares added with `use` to an already activated middleware are activated immediately, and middlewares removed with `unuse` are deactivated. To stop an application call `Runtime.deactivate` with the entry middleware.
+
+### Working with data: Binder and Driver
+
+Game entities are stored in the context as plain data, but middlewares often need their own representation of those entities: a rendering middleware creates a sprite or an svg element for each entity, a physics middleware creates a physics body. Binder and Driver keep those middleware-specific components in sync with the shared entities:
+
+- A **Driver** implements behavior for entities: it creates, updates, and removes a component for each entity that it handles.
+- A **Binder** tracks entities between updates: each time you pass it the current entities, it detects which entities are new, which still exist, and which were removed, and calls the driver functions accordingly.
 
 #### Driver
 
-To create a Driver we need to implement filter, enter, update and exit functions. When we pass new data to a binder, these functions are called on all drivers that are added to the binder:
-- `filter`: select entities that a driver should handle
-- `enter`: called when new entity is added to the data
-- `update`: called for existing entities and new entities
-- `exit`: called when an entity is removed from the data
+A driver implements four functions:
 
-We can create a driver by extending the Driver class, or using the `Driver.create` method:
+- `filter`: returns true for entities this driver should handle
+- `enter`: called when an entity first appears — create and return its component
+- `update`: called for every entity on each data pass, including entities that just entered
+- `exit`: called when an entity is removed — clean up its component
+
+We can create a driver by extending the `Driver` class, or using the `Driver.create` method:
 
 ```ts
-const fruitRenderDriver = Driver.create<Fruit, Element>({
-  filter: (entity) => data.type == "fruit",
+const fruitRenderDriver = Driver.create<Fruit, SVGElement>({
+  filter: (entity) => entity.type === "fruit",
   enter: (entity) => {
-    // create new svg element, or add physics body
+    // create a component for the entity,
+    // for example an svg element, or a physics body
     return component;
   },
   update: (entity, component) => {
-    // in the ui middleware update the svg element
-    // in the physics middleware copy body position to data entity
+    // sync the component with the entity,
+    // for example move the svg element to the entity position
   },
   exit: (entity, component) => {
-    // remove the svg element or physics body
+    // clean up the component,
+    // for example remove the svg element
   },
 });
 ```
 
 #### Binder
 
-Binder needs to uniquely identify entities between updates, so it requires a key function. We can create a binder by extending the Binder class, or using the `Binder.create` method:
+A binder needs a `key` function that uniquely identifies entities between updates, and a list of drivers. We can create a binder by extending the `Binder` class, or using the `Binder.create` method:
 
 ```ts
-// create binder with key function and drivers
-const renderBinder = Binder.create({
-  key: (entity) => entity.key,
+const renderBinder = Binder.create<Fruit>({
+  key: (entity) => entity.id,
   drivers: [fruitRenderDriver],
 });
 ```
 
-Now we can pass data to binder, and it will call driver functions:
+Pass the current entities to the binder, and it will call the driver functions for entities that entered, updated, or exited since the last call:
+
 ```ts
-// in rendering loop
-// pass entities to binder
-// this will call driver functions
-renderBinder.data(entities);
+// for example on every frame
+this.on("frame-update", () => {
+  renderBinder.setData(this.context.fruits);
+});
 ```
 
 ## License
