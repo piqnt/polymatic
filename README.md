@@ -39,27 +39,43 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
   import { Middleware, Runtime } from "polymatic";
 ```
 
-#### ESM.RUN
+#### jsDelivr: ESM
 ```html
   <script type="module">
     // esm import, script type should be module
-    import { Middleware, Runtime } from "https://esm.run/polymatic@0.1";
+    import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.2/+esm";
   </script>
 ```
 
-#### CDN UMD - UNPKG
+#### jsDelivr: UMD
 ```html
-  <script src="https://unpkg.com/polymatic@0.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/polymatic@0.2"></script>
   <script>
     // global polymatic variable added via umd build
     const { Middleware, Runtime } = polymatic;
   </script>
 ```
 
-#### CDN UMD - jsDelivr
+#### ESM.RUN
 ```html
-  <script src="https://cdn.jsdelivr.net/npm/polymatic@0.1"></script>
-    <script>
+  <script type="module">
+    // esm import, script type should be module
+    import { Middleware, Runtime } from "https://esm.run/polymatic@0.2";
+  </script>
+```
+
+#### ESM.SH
+```html
+  <script type="module">
+    // esm import, script type should be module
+    import { Middleware, Runtime } from "https://esm.sh/polymatic@0.2";
+  </script>
+```
+
+#### UNPKG: UMD
+```html
+  <script src="https://unpkg.com/polymatic@0.2"></script>
+  <script>
     // global polymatic variable added via umd build
     const { Middleware, Runtime } = polymatic;
   </script>

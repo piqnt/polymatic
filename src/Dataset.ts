@@ -206,5 +206,8 @@ function isValidKey(key: unknown): key is string {
   return false;
 }
 
-// todo: mark as deprecated
-export { Binder as Dataset };
+/** @deprecated Renamed to {@link Binder}. */
+export const Dataset = Binder;
+
+/** @deprecated Renamed to {@link Binder}. */
+export type Dataset<E extends object> = Binder<E>;
