@@ -8,8 +8,8 @@ Minimalist middleware framework for making modular games and interactive visual 
 
 Six ([Play](https://piqnt.com/six/), [Source](https://github.com/piqnt/polymatic-example-six/)) - Hexagonal tile-matching game, made with Polymatic, Stage.js  
 Ocean ([Play](https://piqnt.com/ocean/), [Source](https://github.com/piqnt/polymatic-example-ocean/)) - Ocean diving runner game, made with Polymatic, Stage.js  
-Tile Box ([Play](https://piqnt.com/box/), [Source](https://github.com/piqnt/polymatic-example-tilebox)) - Polymatic, Stage.js  
-Watermelon Game ([Play](https://piqnt.github.io/polymatic-example-watermelon/), [Source](https://github.com/piqnt/polymatic-example-watermelon)) - Polymatic, Planck/Box2D, SVG  
+Tile Box ([Play](https://piqnt.com/box/), [Source](https://github.com/piqnt/polymatic-example-tilebox)) - Polymatic, Pixi.js  
+Watermelon Game ([Play](https://piqnt.github.io/polymatic-example-watermelon/), [Source](https://github.com/piqnt/polymatic-example-watermelon)) - Polymatic, Planck/Box2D, Pixi.js  
 8-Ball Pool ([Play](https://eight-ball.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-eight-ball)) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
 Pinball ([Play](https://piqnt.github.io/polymatic-example-pinball/), [Source](https://github.com/piqnt/polymatic-example-pinball/)) - Pinball game with editable svg table design, with Polymatic and Planck/Box2D physics  
 Game of Life ([Play](https://piqnt.github.io/polymatic-example-life/), [Source](https://github.com/piqnt/polymatic-example-life)) - Polymatic, Pixi.js  
