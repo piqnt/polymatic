@@ -6,20 +6,34 @@
  */
 
 export interface DriverConfig<D, R> {
+  /** Return true for data this driver handles */
   filter: (d: any) => boolean;
+  /** Called when data is added, create and return a component for it, or null if there is none */
   enter: (d: D) => R | null;
+  /** Called when data is removed, clean up its component */
   exit: (d: D, ref: R) => void;
+  /** Called on every data pass, including the pass where data was added, sync the component with data */
   update: (d: D, ref: R) => void;
 }
 
+/**
+ * Creates, updates and removes a component for each data handled by this driver.
+ *
+ * If `enter` returns null, there is no component for that data, and `update` and `exit` are not called for it.
+ */
 export abstract class Driver<E extends object, C> {
   /** @internal */ _componentsById: Record<string, C> = {};
 
+  /** Return true for data this driver handles */
   abstract filter(d: E): boolean;
+  /** Called when data is added, create and return a component for it, or null if there is none */
   abstract enter(d: E): C | null;
+  /** Called when data is removed, clean up its component */
   abstract exit(d: E, ref: C): void;
+  /** Called on every data pass, including the pass where data was added, sync the component with data */
   abstract update(d: E, ref: C): void;
 
+  /** Create a driver from plain functions, instead of extending this class */
   static create<E extends object, C>(config: DriverConfig<E, C>): Driver<E, C> {
     return new (class extends Driver<E, C> {
       filter = config.filter;
@@ -29,17 +43,23 @@ export abstract class Driver<E extends object, C> {
     })();
   }
 
+  /** The component for the given key, or undefined if there is none */
   ref(key: string): C | undefined {
     return this._componentsById[key];
   }
 }
 
 export interface BinderConfig<E extends object> {
+  /** Uniquely identifies data between passes, see {@link Binder.key} */
   key: (e: E) => string;
   drivers?: Driver<E, any>[];
 }
 
+/**
+ * Tracks data between passes, and calls driver functions for data that entered, updated or exited.
+ */
 export abstract class Binder<E extends object> {
+  /** Create a binder from plain functions, instead of extending this class */
   static create<E extends object>(config: BinderConfig<E>): Binder<E> {
     return new (class extends Binder<E> {
       key = config.key;
@@ -49,6 +69,12 @@ export abstract class Binder<E extends object> {
 
   /** @internal */ _drivers: Driver<E, any>[] = [];
 
+  /**
+   * Uniquely identifies data between passes.
+   *
+   * Keys must be non-empty strings, and unique within each pass. Data with an invalid or duplicate key
+   * is ignored with a warning. The key of data should not change while it is in the binder.
+   */
   abstract key(d: E): string;
 
   /** @hidden @deprecated Use config.drivers */
@@ -74,6 +100,10 @@ export abstract class Binder<E extends object> {
     this.setData(data);
   }
 
+  /**
+   * Pass the current data, and the binder calls driver functions for data
+   * that entered, updated or exited since the last pass.
+   */
   setData(data: (E | undefined | null)[]) {
     // todo: use diff-match-patch instead of map?
     if (!Array.isArray(data)) throw "Invalid data: " + data;

@@ -137,7 +137,11 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   }
 
   /**
-   * Add an event handler
+   * Add an event handler.
+   *
+   * If an event handler function returns true, it will stop propagation to any other middlewares.
+   *
+   * A middleware can have up to one handler for each event `type`.
    */
   on(type: string, handler: (ev: any) => any): void {
     if (this.__handlers[type]) throw Error(`Handler for ${type} already exists`);
@@ -145,7 +149,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   }
 
   /**
-   * "capture" an event: call handlers and pass it to children.
+   * This is used internally, calls event handler and passes down event to children.
    */
   _consume(type: string, ev?: any): boolean {
     // debugEvent(name, "↓", this.constructor.name, ev);
@@ -161,7 +165,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   }
 
   /**
-   * Call event handler registered on this middleware
+   * This is used internally, calls event handler.
    */
   _handle(type: string, ev?: any): boolean {
     if (!this.activated) return;
@@ -179,7 +183,13 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   }
 
   /**
-   * "bubble" an event to parent, pass to parent until it reaches the top.
+   * Send an event to all active middlewares.
+   *
+   * An event is first bubbled to the runtime through middleware parent chain.
+   * Runtime queues events as microtask -- they are asynchronously but in the same animation frame.
+   * Events are then recursively passed down to all active middlewares and their children.
+   * 
+   * If an event handler returns true, delivering the event is stopped.
    */
   emit(type: string, ev?: any): void {
     if (!this.activated) return;
