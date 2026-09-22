@@ -188,6 +188,8 @@ A driver implements four functions:
 - `update`: called for every entity on each data pass, including entities that just entered
 - `exit`: called when an entity is removed — clean up its component
 
+If `enter` returns `null`, the driver has no component for that entity, and `update` and `exit` are not called for it.
+
 We can create a driver by extending the `Driver` class, or using the `Driver.create` method:
 
 ```ts
@@ -219,6 +221,8 @@ const renderBinder = Binder.create<Fruit>({
   drivers: [fruitRenderDriver],
 });
 ```
+
+Keys must be non-empty strings, and unique within each data pass. Entities with an invalid or duplicate key are ignored with a warning. The key of an entity should not change while it is in the data.
 
 Pass the current entities to the binder, and it will call the driver functions for entities that entered, updated, or exited since the last call:
 

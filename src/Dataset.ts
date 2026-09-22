@@ -63,8 +63,11 @@ export abstract class Binder<E extends object> {
 
   /** @internal */ _mapBuffer: Record<string, E> = {};
   /** @internal */ _updateBuffer: E[] = [];
+  /** @internal */ _updateKeys: string[] = [];
   /** @internal */ _enterBuffer: E[] = [];
+  /** @internal */ _enterKeys: string[] = [];
   /** @internal */ _exitBuffer: E[] = [];
+  /** @internal */ _exitKeys: string[] = [];
 
   /** @hidden @deprecated Use setData */
   data(data: (E | undefined | null)[]) {
@@ -76,24 +79,40 @@ export abstract class Binder<E extends object> {
     if (!Array.isArray(data)) throw "Invalid data: " + data;
 
     this._enterBuffer.length = 0;
+    this._enterKeys.length = 0;
     this._exitBuffer.length = 0;
+    this._exitKeys.length = 0;
     this._updateBuffer.length = data.length;
+    this._updateKeys.length = data.length;
 
     for (let i = 0; i < data.length; i++) {
       const d = data[i];
       if (typeof d !== "object" || d === null) continue;
       const id = this.key(d);
+      if (!isValidKey(id)) {
+        console.warn("Invalid key, data is ignored: " + id, d);
+        continue;
+      }
+      // _mapBuffer is empty at this point, so this only matches keys added in this pass
+      if (this._mapBuffer[id]) {
+        console.warn("Duplicate key, data is ignored: " + id, d);
+        continue;
+      }
       if (!this._map[id]) {
         this._enterBuffer.push(d);
+        this._enterKeys.push(id);
       } else {
         delete this._map[id];
       }
       this._updateBuffer[i] = d;
+      this._updateKeys[i] = id;
       this._mapBuffer[id] = d;
     }
 
     for (const id in this._map) {
       this._exitBuffer.push(this._map[id]);
+      // keys are taken from the map, in case key() has changed since data was added
+      this._exitKeys.push(id);
       delete this._map[id];
     }
 
@@ -103,11 +122,12 @@ export abstract class Binder<E extends object> {
 
     for (let i = 0; i < this._exitBuffer.length; i++) {
       const d = this._exitBuffer[i];
-      const key = this.key(d);
+      const key = this._exitKeys[i];
       for (const driver of this._drivers) {
         if (driver.filter(d)) {
           const ref = driver._componentsById[key];
-          driver.exit(d, ref);
+          // ref is undefined if enter returned null
+          if (ref !== undefined) driver.exit(d, ref);
         }
         delete driver._componentsById[key];
       }
@@ -115,7 +135,7 @@ export abstract class Binder<E extends object> {
 
     for (let i = 0; i < this._enterBuffer.length; i++) {
       const d = this._enterBuffer[i];
-      const key = this.key(d);
+      const key = this._enterKeys[i];
       for (const driver of this._drivers) {
         if (driver.filter(d)) {
           const ref = driver.enter(d);
@@ -127,21 +147,33 @@ export abstract class Binder<E extends object> {
     }
 
     for (let i = 0; i < this._updateBuffer.length; i++) {
-      if (typeof data[i] !== "object" || data[i] === null) continue;
       const d = this._updateBuffer[i];
-      const key = this.key(d);
+      // undefined if data was not an object, or key was invalid or duplicate
+      if (d === undefined) continue;
+      const key = this._updateKeys[i];
       for (const driver of this._drivers) {
         if (driver.filter(d)) {
           const ref = driver._componentsById[key];
-          driver.update(d, ref);
+          // ref is undefined if enter returned null
+          if (ref !== undefined) driver.update(d, ref);
         }
       }
     }
 
     this._enterBuffer.length = 0;
+    this._enterKeys.length = 0;
     this._exitBuffer.length = 0;
+    this._exitKeys.length = 0;
     this._updateBuffer.length = 0;
+    this._updateKeys.length = 0;
   }
+}
+
+function isValidKey(key: unknown): key is string {
+  if (typeof key === "string") return key !== "";
+  // numbers are coerced to string when used as object keys
+  if (typeof key === "number") return key === key;
+  return false;
 }
 
 // todo: mark as deprecated
