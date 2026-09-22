@@ -65,6 +65,6 @@
     "watch": "vite build --watch",
     "change": "changeset",
     "version": "changeset version",
-    "publish": "changeset publish"
+    "release": "changeset publish"
   }
 }
