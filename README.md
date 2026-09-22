@@ -56,29 +56,88 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
   </script>
 ```
 
-#### ESM.RUN
-```html
-  <script type="module">
-    // esm import, script type should be module
-    import { Middleware, Runtime } from "https://esm.run/polymatic@0.2";
-  </script>
-```
+AI chat sandboxes, such as Claude, ChatGPT and Grok, only allow jsDelivr.
 
-#### ESM.SH
-```html
-  <script type="module">
-    // esm import, script type should be module
-    import { Middleware, Runtime } from "https://esm.sh/polymatic@0.2";
-  </script>
-```
+The same files are also on unpkg and esm.sh, if jsDelivr is not reachable for you.
 
-#### UNPKG: UMD
+## Quick Start
+
+A complete application — copy this into an `.html` file and open it in a browser:
+
 ```html
-  <script src="https://unpkg.com/polymatic@0.2"></script>
-  <script>
-    // global polymatic variable added via umd build
-    const { Middleware, Runtime } = polymatic;
-  </script>
+<!doctype html>
+<canvas id="view" width="300" height="200" style="border: 1px solid #ccc"></canvas>
+<p id="status">loading...</p>
+
+<script type="module">
+  import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.2/+esm";
+
+  // context: state shared by every middleware
+  class Game {
+    ball = { x: 40, y: 40, vx: 140, vy: 100, r: 10 };
+    bounces = 0;
+  }
+
+  // emits "frame-update" on every animation frame
+  class FrameLoop extends Middleware {
+    constructor() {
+      super();
+      this.on("activate", () => (this.timer = requestAnimationFrame(this.tick)));
+      this.on("deactivate", () => cancelAnimationFrame(this.timer));
+    }
+    tick = (now) => {
+      const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
+      this.last = now;
+      this.emit("frame-update", { dt });
+      this.timer = requestAnimationFrame(this.tick);
+    };
+  }
+
+  // game logic: moves the ball and emits "bounce" off the walls
+  class Physics extends Middleware {
+    constructor() {
+      super();
+      this.on("frame-update", (ev) => this.update(ev.dt));
+    }
+    update(dt) {
+      const ball = this.context.ball;
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+      if (ball.x < ball.r || ball.x > 300 - ball.r) (ball.vx *= -1), this.emit("bounce");
+      if (ball.y < ball.r || ball.y > 200 - ball.r) (ball.vy *= -1), this.emit("bounce");
+    }
+  }
+
+  // rendering, and the bounce counter
+  class Renderer extends Middleware {
+    constructor() {
+      super();
+      this.canvas = document.getElementById("view").getContext("2d");
+      this.on("frame-update", () => this.draw());
+      this.on("bounce", () => (this.context.bounces += 1));
+    }
+    draw() {
+      const { ball, bounces } = this.context;
+      this.canvas.clearRect(0, 0, 300, 200);
+      this.canvas.beginPath();
+      this.canvas.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      this.canvas.fill();
+      document.getElementById("status").textContent = `bounces: ${bounces}`;
+    }
+  }
+
+  // the entry middleware composes the application
+  class Main extends Middleware {
+    constructor() {
+      super();
+      this.use(new FrameLoop()); // events are delivered parents first, then
+      this.use(new Physics());   // children in the order they were added, so
+      this.use(new Renderer());  // physics runs before rendering each frame
+    }
+  }
+
+  Runtime.activate(new Main(), new Game());
+</script>
 ```
 
 ## User Guide - 5 Minutes
@@ -248,6 +307,62 @@ this.on("frame-update", () => {
   renderBinder.setData(this.context.fruits);
 });
 ```
+
+## API
+
+Every class the package exports, with the members you use:
+
+```ts
+// Middleware — a unit of application logic
+class Middleware<S = object> {
+  use(child: Middleware): void;        // add a child middleware
+  unuse(child: Middleware): void;      // remove a child middleware
+  on(type: string, handler: (ev: any) => any): void;  // one handler per type, return true to stop propagation
+  emit(type: string, ev?: any): void;  // queued as a microtask, delivered to the whole application
+  get context(): S;                    // the shared context, only while activated
+  get activated(): boolean;
+}
+
+// Runtime — the root of the middleware tree
+class Runtime<S = object> extends Middleware<S> {
+  static activate<S extends object>(middleware: Middleware<S>, context: S): void;
+  static deactivate(middleware: Middleware): boolean;
+}
+
+// Driver — creates, updates and removes a component for each entity it handles
+abstract class Driver<E extends object, C> {
+  static create<E, C>(config: {
+    filter: (entity: E) => boolean;    // true for entities this driver handles
+    enter: (entity: E) => C | null;    // entity appeared, create its component, or null for none
+    update: (entity: E, component: C) => void;  // every pass, including the entering one
+    exit: (entity: E, component: C) => void;    // entity removed, clean up
+  }): Driver<E, C>;
+  ref(key: string): C | undefined;     // the component for a key
+}
+
+// Binder — tracks entities between passes and calls the driver functions
+abstract class Binder<E extends object> {
+  static create<E>(config: {
+    key: (entity: E) => string;        // non-empty, unique within a pass, stable over time
+    drivers?: Driver<E, any>[];
+  }): Binder<E>;
+  setData(data: (E | undefined | null)[]): void;  // pass the current entities
+}
+
+// Memo — returns true when the arguments changed since the last call
+class Memo {
+  static init(...args: any[]): Memo;
+  update(...args: any[]): boolean;
+  clear(): void;
+}
+
+// Dataset — deprecated, the former name of Binder
+```
+
+`Driver` and `Binder` can also be subclassed instead of using `create`, implementing the same
+members. Middlewares receive `"activate"` when they are activated and `"deactivate"` when they are
+deactivated. All other events are your own — the framework has no frame-loop, so `"frame-update"`
+in the examples above is emitted by a middleware you write.
 
 ## License
 Polymatic is licensed under the MIT License. You can use it for free in your projects, both open-source and commercial. License file is in the root directory of the project source code.
