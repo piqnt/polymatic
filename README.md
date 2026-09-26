@@ -283,6 +283,8 @@ class FrameLoop extends Middleware {
 
 Middlewares added with `use` to an already activated middleware are activated immediately, and middlewares removed with `unuse` are deactivated. To stop an application call `Runtime.deactivate` with the entry middleware.
 
+When a middleware is activated, its whole subtree is attached first, and then `"activate"` handlers are called, parents before children. So an activate handler can already use the middleware's children. When it is deactivated, `"deactivate"` handlers are called while the subtree is still attached.
+
 ### Working with data: Binder and Driver
 
 Game entities are stored in the context as plain data, but middlewares often need their own representation of those entities: a rendering middleware creates a sprite or an svg element for each entity, a physics middleware creates a physics body. Binder and Driver keep those middleware-specific components in sync with the shared entities:

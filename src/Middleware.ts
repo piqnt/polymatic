@@ -43,6 +43,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   __children: Middleware<any>[] = [];
   /** @internal @hidden */
   __parent: MiddlewareInterface<S> = null;
+  /** @internal @hidden attached, activate handler not called yet */
+  __pendingActivate = false;
 
   get activated() {
     return this.__parent ? this.__parent.activated : false;
@@ -61,6 +63,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
 
     if (this.activated) {
       middleware.__attach(this);
+      middleware.__activate();
     }
     this.__children.push(middleware);
   }
@@ -69,6 +72,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     const index = this.__children.indexOf(middleware);
     if (index !== -1) {
       this.__children.splice(index, 1);
+      middleware?.__deactivate();
       middleware?.__detach();
     }
   }
@@ -91,25 +95,61 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     this.__children.length = 0;
     this.__children.push(...children);
     for (const child of removed) {
+      child.__deactivate();
       child.__detach();
     }
     if (this.activated) {
       for (const child of added) {
         child.__attach(this);
+        child.__activate();
       }
     }
   };
 
-  /** @internal @hidden */
+  /**
+   * Activation runs in two passes over the subtree: `__attach` links every middleware to its
+   * parent, then `__activate` calls activate handlers, parents before children. So an activate
+   * handler can rely on the whole subtree being attached. Deactivation mirrors it: `__deactivate`
+   * calls deactivate handlers while the subtree is still attached, then `__detach` unlinks it.
+   *
+   * @internal @hidden
+   */
   __attach(parent: MiddlewareInterface<S>) {
     if (this.__parent) {
       return;
     }
     this.__parent = parent;
+    this.__pendingActivate = true;
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__attach(this);
+    }
+  }
+
+  /** @internal @hidden */
+  __activate() {
+    if (!this.__pendingActivate) {
+      return;
+    }
+    this.__pendingActivate = false;
     debugMiddleware("activate", "+", this.constructor.name);
     this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
-      this.__children[i].__attach(this);
+      this.__children[i].__activate();
+    }
+  }
+
+  /** @internal @hidden */
+  __deactivate() {
+    if (!this.__parent) {
+      return;
+    }
+    // an activate handler that has not run yet has nothing to undo
+    if (!this.__pendingActivate) {
+      debugMiddleware("deactivate", "-", this.constructor.name);
+      this._handle("deactivate");
+    }
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__deactivate();
     }
   }
 
@@ -118,11 +158,10 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     if (!this.__parent) {
       return;
     }
-    debugMiddleware("deactivate", "-", this.constructor.name);
-    this._handle("deactivate");
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__detach();
     }
+    this.__pendingActivate = false;
     this.__parent = null;
   }
 
@@ -243,9 +282,12 @@ export class Runtime<S = object> extends Middleware<S> {
     this._context = context;
 
     this._activated = true;
-    this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__attach(this);
+    }
+    this._handle("activate");
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__activate();
     }
   }
 
@@ -253,11 +295,15 @@ export class Runtime<S = object> extends Middleware<S> {
     if (!this._activated) {
       return;
     }
-    this._activated = false;
+    // still activated while deactivate handlers run, since handlers only run while activated
     this._handle("deactivate");
+    for (let i = 0; i < this.__children.length; i++) {
+      this.__children[i].__deactivate();
+    }
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__detach();
     }
+    this._activated = false;
   }
 
   private _context: S;
