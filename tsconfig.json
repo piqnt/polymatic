@@ -15,14 +15,19 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
-    
+
     "module": "ES6",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "sourceMap": true,
 
     "noEmit": true,
 
     "lib": ["ES6", "dom", "dom.iterable"],
+
+    // the devtools panel uses preact
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
 
     "types": []
   },

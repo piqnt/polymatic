@@ -346,6 +346,110 @@ this.on("frame-update", () => {
 });
 ```
 
+## Debugging
+
+The polymatic devtools show what your application's middlewares and events are doing, in a panel over the page and in the browser console. They can be added before or after the application is activated.
+
+In the browser without a bundler, add them as a module script. It works with both the ESM and the UMD build of polymatic on the page:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/polymatic@0.3/dist/devtools-install.js"></script>
+```
+
+With a bundler, import `polymatic/devtools-install`, which installs them with the defaults:
+
+```ts
+import "polymatic/devtools-install";
+```
+
+Press **Alt+Shift+D** to open a panel over the page, with these tabs:
+
+- **Tree** — every middleware, whether it is active, and the events it handles. Events that have not been sent yet are dimmed.
+- **Events** — recent events, newest first: who sent each one, which handlers ran and how long they took, and which one stopped it. Click an event for its payload and its time in the queue.
+- **Frame** — how long each middleware's `"frame-update"` and `"frame-render"` handlers take, over the last 60 frames.
+- **Issues** — events sent to no handler, often a misspelt name, and events handled but not sent so far.
+- **Context** — the context, browsed by path.
+
+The same is available in the browser console, as `polymaticDevtools`:
+
+```js
+polymaticDevtools.install();           // start recording, if it is not installed yet
+polymaticDevtools.tree();              // the middleware tree
+polymaticDevtools.events("pointer");   // recent events, filtered
+polymaticDevtools.unmatched();         // events without handlers, and handlers without events
+polymaticDevtools.frame();             // handler time per frame
+polymaticDevtools.context("score");    // a value in the context
+polymaticDevtools.watch("score");      // log it whenever it changes
+polymaticDevtools.log("user-");        // log matching events as they are delivered
+polymaticDevtools.panel();             // show or hide the panel
+```
+
+Settings can be changed with `config`, before or after installing, and take effect right away. Called without changes, it returns the current settings:
+
+```js
+polymaticDevtools.config({
+  hotkey: true,                        // Alt+Shift+D toggles the panel
+  frameEvents: ["frame-update", "frame-render"], // events timed per frame in the Frame tab
+  logFrameEvents: false,               // keep frame events in the Events tab too
+  maxEvents: 500,                      // how many events to keep
+});
+```
+
+Middlewares are shown by class name. In a minified build, give a middleware a `displayName` to keep it readable.
+
+To build your own tool, pass an `Inspector` to `inspect`: it is told when events are sent and delivered, how long each handler takes, and when middlewares are activated and deactivated.
+
+### Choosing when to record
+
+Loading `polymatic/devtools` on its own only makes `polymaticDevtools` available: nothing is recorded, and the panel's hotkey is off, until `polymaticDevtools.install()` is called. So you can decide in code when they start, for example only with a `?debug` URL:
+
+```ts
+import polymaticDevtools from "polymatic/devtools";
+
+if (new URLSearchParams(location.search).has("debug")) {
+  polymaticDevtools.install();
+}
+```
+
+Or ship them without installing them, and call `polymaticDevtools.install()` from the browser console of a live build when you need them. `polymaticDevtools.uninstall()` stops recording again.
+
+To leave them out of production builds altogether, load them in development only:
+
+```ts
+if (import.meta.env.DEV) {
+  import("polymatic/devtools").then(({ polymaticDevtools }) => polymaticDevtools.install());
+}
+```
+
+### Automated tests and AI agents
+
+Tests and AI agents that drive an application in a browser, for example with Playwright, can read the devtools instead of screenshots and fixed delays. Every method returns plain data, and these are made for it:
+
+- `waitFor(type, options)` — resolves once the next event of that type has been delivered and its handlers have run. `after` also accepts one already delivered after an event id, `where` filters, and `timeout` (10 seconds by default) rejects.
+- `report()` — the tree, the last events, unmatched events and frame times, as JSON.
+- `snapshot(path, depth)` — a copy of the context, or part of it, as JSON: signals become their values, and cycles and deep objects are cut off.
+- `config({ quiet: true })` — the methods return data without printing it.
+
+Read `lastEventId` before an action, then wait for the event it causes after that id, so an event delivered in between is not missed:
+
+```js
+await page.evaluate(() => polymaticDevtools.install().config({ quiet: true }));
+
+const { lastEventId } = await page.evaluate(() => polymaticDevtools.report());
+await page.mouse.click(x, y);
+const connect = await page.evaluate(
+  (after) => polymaticDevtools.waitFor("user-connect", { after }),
+  lastEventId,
+);
+// connect.handlers: which middlewares handled it, how long each took, and which one stopped it
+
+const { unmatched } = await page.evaluate(() => polymaticDevtools.report());
+// unmatched.noHandler: events no middleware handled, often a misspelt name
+const score = await page.evaluate(() => polymaticDevtools.snapshot("score"));
+```
+
+Events tell you when the application's state has changed, not when the screen has caught up: after an animated change, give the drawing a moment, or wait for your own state, before reading pixels. Frame events are timed but not kept in the event list, unless `config({ logFrameEvents: true })`.
+
 ## API
 
 Every class the package exports, with the members you use:
@@ -392,6 +496,9 @@ abstract class Binder<E extends object> {
   }): Binder<E>;
   setData(data: (E | undefined | null)[]): void;  // pass the current entities
 }
+
+// inspect — set an Inspector that is told what runtimes do, for debugging tools
+function inspect(inspector: Inspector | null): void;
 
 // Memo — returns true when the arguments changed since the last call
 class Memo {

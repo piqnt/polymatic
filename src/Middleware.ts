@@ -5,16 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import { debug, watch } from "./internal/debug";
 import { type EventType } from "./EventType";
+import { inspector } from "./Inspector";
 
-/** @internal @hidden */
-const debugEvent = debug("middleware.event", (type: string) => {
-  return !(type?.endsWith("-move") || type === "hotsyncWorld");
-});
+/** @internal @hidden true while an event is passed up to the runtime, so only its sender is inspected */
+let bubbling = false;
 
-/** @internal @hidden */
-const debugMiddleware = debug("middleware.lifecycle");
+/** @internal @hidden how many handlers ran for the event being delivered, for the inspector */
+let handled = 0;
 
 export type EventHandler = (ev?: any) => any;
 export type ContextSetter<S> = (context: S) => void;
@@ -131,7 +129,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
       return;
     }
     this.__pendingActivate = false;
-    debugMiddleware("activate", "+", this.constructor.name);
+    inspector()?.activate?.(this);
     this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__activate();
@@ -145,7 +143,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     }
     // an activate handler that has not run yet has nothing to undo
     if (!this.__pendingActivate) {
-      debugMiddleware("deactivate", "-", this.constructor.name);
+      inspector()?.deactivate?.(this);
       this._handle("deactivate");
     }
     for (let i = 0; i < this.__children.length; i++) {
@@ -201,8 +199,6 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * This is used internally, calls event handler and passes down event to children.
    */
   _consume(type: string, ev?: any): boolean {
-    // debugEvent(name, "↓", this.constructor.name, ev);
-
     const stop = this._handle(type, ev);
     if (stop) return true;
 
@@ -222,10 +218,15 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     const handler = this.__handlers && this.__handlers[type];
     if (handler) {
       if (typeof handler === "function") {
-        debugEvent(type, "→", this.constructor.name, ev);
-
-        const stop = handler.call(this, ev);
-        if (stop === true) return true;
+        handled++;
+        const inspect = inspector();
+        if (!inspect?.handle) {
+          return handler.call(this, ev) === true;
+        }
+        const start = performance.now();
+        const stop = handler.call(this, ev) === true;
+        inspect.handle(type, ev, this, performance.now() - start, stop);
+        return stop;
       }
     }
     return false;
@@ -246,10 +247,16 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     if (!this.activated) return;
 
     const name = typeof type === "string" ? type : (type as EventType<any>).name;
-    debugEvent(name, "↑", this.constructor.name, ev);
+    if (!bubbling) inspector()?.emit?.(name, ev, this);
 
     if (this.__parent) {
-      this.__parent.emit(name, ev);
+      const outer = bubbling;
+      bubbling = true;
+      try {
+        this.__parent.emit(name, ev);
+      } finally {
+        bubbling = outer;
+      }
     } else {
       console.error(Error("Not active!"));
     }
@@ -277,14 +284,13 @@ export class Runtime<S = object> extends Middleware<S> {
       return;
     }
 
-    context = watch("middleware.context", context as object) as S;
-
     this._context = context;
 
     this._activated = true;
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__attach(this);
     }
+    inspector()?.activate?.(this);
     this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__activate();
@@ -296,6 +302,7 @@ export class Runtime<S = object> extends Middleware<S> {
       return;
     }
     // still activated while deactivate handlers run, since handlers only run while activated
+    inspector()?.deactivate?.(this);
     this._handle("deactivate");
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__deactivate();
@@ -330,7 +337,27 @@ export class Runtime<S = object> extends Middleware<S> {
 
   emit<T extends EventType<any> | string>(type: T, ...[ev]: EventArgs<PayloadOf<T>>): void {
     const name = typeof type === "string" ? type : (type as EventType<any>).name;
-    this._microtask.then(() => this._consume(name, ev));
+    if (!bubbling) inspector()?.emit?.(name, ev, this);
+    this._microtask.then(() => this.__dispatch(name, ev));
+  }
+
+  /** @internal @hidden delivers a queued event down the tree */
+  __dispatch(name: string, ev: any) {
+    const inspect = inspector();
+    if (!inspect) {
+      this._consume(name, ev);
+      return;
+    }
+    inspect.dispatch?.(name, ev, this);
+    const outer = handled;
+    handled = 0;
+    try {
+      this._consume(name, ev);
+    } finally {
+      const count = handled;
+      handled = outer;
+      inspect.dispatched?.(name, ev, count);
+    }
   }
 
   static activate<S extends object>(middleware: Middleware<S>, context: S) {
