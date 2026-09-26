@@ -1,6 +1,6 @@
 {
   "name": "polymatic",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Minimalist framework for building games and interactive visual application",
   "keywords": [
     "framework",
