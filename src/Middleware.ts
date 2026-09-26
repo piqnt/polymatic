@@ -15,11 +15,6 @@ const debugEvent = debug("middleware.event", (type: string) => {
 /** @internal @hidden */
 const debugMiddleware = debug("middleware.lifecycle");
 
-/** @internal @hidden */
-type DeepPartial<S> = {
-  [P in keyof S]?: S[P] extends object ? DeepPartial<S[P]> : S[P];
-};
-
 // todo: type this
 export type EventHandler = (ev?: any) => any;
 export type ContextSetter<S> = (context: S) => void;
@@ -39,7 +34,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   /** @internal @hidden */
   __handlers: Record<string, EventHandler> = {};
   /** @internal @hidden */
-  __children: Middleware<DeepPartial<S>>[] = [];
+  __children: Middleware<any>[] = [];
   /** @internal @hidden */
   __parent: MiddlewareInterface<S> = null;
 
@@ -47,8 +42,14 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     return this.__parent ? this.__parent.activated : false;
   }
 
-  /** Add a child middleware */
-  use(middleware: Middleware<DeepPartial<S>>) {
+  /**
+   * Add a child middleware.
+   *
+   * The child's context type is what it needs, and this middleware's context type must provide
+   * all of it: fields it declares with the same types. A middleware that uses children with
+   * different needs declares all of them in its own context type.
+   */
+  use<C>(this: Middleware<NoInfer<C>>, middleware: Middleware<C>) {
     const index = this.__children.indexOf(middleware);
     if (index !== -1) return;
 
@@ -58,7 +59,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     this.__children.push(middleware);
   }
 
-  unuse(middleware: Middleware<DeepPartial<S>>) {
+  unuse(middleware: Middleware<any>) {
     const index = this.__children.indexOf(middleware);
     if (index !== -1) {
       this.__children.splice(index, 1);
@@ -67,10 +68,10 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   }
 
   /** @experimental Replace all child middlewares with provided list */
-  _swap = (children: Middleware<DeepPartial<S>>[]) => {
+  _swap = (children: Middleware<any>[]) => {
     const current = this.__children;
-    const removed: Middleware<DeepPartial<S>>[] = [];
-    const added: Middleware<DeepPartial<S>>[] = [];
+    const removed: Middleware<any>[] = [];
+    const added: Middleware<any>[] = [];
     for (const child of children) {
       if (current.indexOf(child) === -1) {
         added.push(child);
@@ -213,7 +214,7 @@ export class Runtime<S = object> extends Middleware<S> {
   /** @internal @hidden */
   __handlers: Record<string, EventHandler> = {};
   /** @internal @hidden */
-  __children: Middleware<DeepPartial<S>>[] = [];
+  __children: Middleware<any>[] = [];
 
   private _activated = false;
   get activated() {
@@ -274,7 +275,7 @@ export class Runtime<S = object> extends Middleware<S> {
   }
 
   static activate<S extends object>(middleware: Middleware<S>, context: S) {
-    const manager = new Runtime();
+    const manager = new Runtime<S>();
     manager.use(middleware);
     manager._activate(context);
   }

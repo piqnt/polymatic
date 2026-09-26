@@ -203,6 +203,21 @@ class GameLogic extends Middleware<GameContext> {
 
 Note that `this.context` is only available while the middleware is activated.
 
+A middleware's context type declares what it needs. When a middleware uses a child, its own context type must provide everything the child's declares, with the same types, so TypeScript reports a missing or mistyped field where the child is added:
+
+```ts
+class Score extends Middleware<{ score: number }> {}
+
+class Game extends Middleware<{ score: number; level: number }> {
+  constructor() {
+    super();
+    this.use(new Score()); // ok: Game's context has score
+  }
+}
+```
+
+A field that a child requires must be required in the parent's type too, even if another middleware sets it later.
+
 ### Events
 
 Middlewares communicate by sending and receiving events. Use `emit` to send an event, and `on` to register a handler (usually in the constructor):
@@ -316,7 +331,7 @@ Every class the package exports, with the members you use:
 ```ts
 // Middleware — a unit of application logic
 class Middleware<S = object> {
-  use(child: Middleware): void;        // add a child middleware
+  use(child: Middleware): void;        // add a child middleware; this context must provide what the child's needs
   unuse(child: Middleware): void;      // remove a child middleware
   on(type: string, handler: (ev: any) => any): void;  // one handler per type, return true to stop propagation
   emit(type: string, ev?: any): void;  // queued as a microtask, delivered to the whole application
