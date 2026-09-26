@@ -63,6 +63,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "watch": "vite build --watch",
+    "lint": "eslint src",
     "change": "changeset",
     "version": "changeset version",
     "release": "changeset publish"

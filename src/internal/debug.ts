@@ -12,8 +12,8 @@ function getOption(key: string) {
 
 /** @internal */
 function isEnabled(type: string, namespace: string) {
-  let exclude = getOption(type + "_exclude");
-  let include = getOption(type + "_include");
+  const exclude = getOption(type + "_exclude");
+  const include = getOption(type + "_include");
   try {
     if (exclude && namespace.match(exclude)) return false;
   } catch (e) {
@@ -43,7 +43,7 @@ export function debug(namespace: string, filter?: (...any) => boolean) {
       return;
     }
     console.log(namespace, ...args);
-    isTrace && console.trace();
+    if (isTrace) console.trace();
   };
 }
 
@@ -59,7 +59,7 @@ export function watch<T extends object>(namespace: string, target: T): T {
   return new Proxy(target, {
     set(obj, prop, value, receiver) {
       console.debug(namespace, ".", prop.toString(), obj[prop], "↬", value);
-      isTrace && console.trace();
+      if (isTrace) console.trace();
       return Reflect.set(obj, prop, value, receiver);
     },
   });

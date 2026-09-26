@@ -353,7 +353,7 @@ Every class the package exports, with the members you use:
 ```ts
 // Middleware — a unit of application logic
 class Middleware<S = object> {        // S: the context it needs
-  use(child: Middleware): void;        // add a child middleware; this context must provide what the child's needs
+  use(child: Middleware): void;        // add a child middleware; this context must provide what the child needs
   unuse(child: Middleware): void;      // remove a child middleware
   on(type: string | EventType, handler: (ev: any) => any): void;  // one handler per type, return true to stop propagation
   emit(type: string | EventType, ev?: any): void;  // queued as a microtask, delivered to the whole application

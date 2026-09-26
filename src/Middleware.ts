@@ -237,7 +237,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * An event is first bubbled to the runtime through middleware parent chain.
    * Runtime queues events as microtask -- they are asynchronously but in the same animation frame.
    * Events are then recursively passed down to all active middlewares and their children.
-   * 
+   *
    * If an event handler returns true, delivering the event is stopped.
    *
    * `type` is an event type, and `ev` must be its payload type, or an event name.

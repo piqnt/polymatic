@@ -33,6 +33,8 @@ export default defineConfig({
     typescriptPlugin({}),
     dtsBundleGeneratorPlugin({
       fileName: "polymatic.d.ts",
+      // types only used in public signatures, like on/emit's payload helpers, stay internal
+      output: { exportReferencedTypes: false },
     }),
   ],
 });
