@@ -285,6 +285,27 @@ Middlewares added with `use` to an already activated middleware are activated im
 
 When a middleware is activated, its whole subtree is attached first, and then `"activate"` handlers are called, parents before children. So an activate handler can already use the middleware's children. When it is deactivated, `"deactivate"` handlers are called while the subtree is still attached.
 
+### Errors
+
+A handler that throws, or returns a promise that is rejected, doesn't stop the application: the event is still delivered to the other middlewares, and activation carries on with the rest of the tree. The error is reported like any uncaught error, in the console and to `window.onerror`.
+
+A middleware can handle failures in its subtree, like an error boundary, with a `Failure` handler:
+
+```ts
+class SoundManager extends Middleware<Context> {
+  constructor() {
+    super();
+    this.on(Failure, (failure) => {
+      // failure.error, failure.middleware, and failure.type and failure.ev, the event it was handling
+      this.showErrorScreen(failure.error);
+      return true;
+    });
+  }
+}
+```
+
+A failure goes up the parent chain from the middleware that failed, to the nearest `Failure` handler. If that returns `true`, the failure stops there; otherwise it goes on up, and is reported as uncaught if no handler stops it. The failed middleware stays in the tree: to remove it, call `this.unuse(failure.middleware)` from its parent.
+
 ### Working with data: Binder and Driver
 
 Game entities are stored in the context as plain data, but middlewares often need their own representation of those entities: a rendering middleware creates a sprite or an svg element for each entity, a physics middleware creates a physics body. Binder and Driver keep those middleware-specific components in sync with the shared entities:
@@ -367,7 +388,7 @@ Press **Alt+Shift+D** to open a panel over the page, with these tabs:
 - **Tree** — every middleware, whether it is active, and the events it handles. Events that have not been sent yet are dimmed.
 - **Events** — recent events, newest first: who sent each one, which handlers ran and how long they took, and which one stopped it. Click an event for its payload and its time in the queue.
 - **Frame** — how long each middleware's `"frame-update"` and `"frame-render"` handlers take, over the last 60 frames.
-- **Issues** — events sent to no handler, often a misspelt name, and events handled but not sent so far.
+- **Issues** — handlers that failed, with how often and whether a `Failure` handler stopped them; events sent to no handler, often a misspelt name; and events handled but not sent so far.
 - **Context** — the context, browsed by path.
 
 The same is available in the browser console, as `polymaticDevtools`:
@@ -376,6 +397,7 @@ The same is available in the browser console, as `polymaticDevtools`:
 polymaticDevtools.install();           // start recording, if it is not installed yet
 polymaticDevtools.tree();              // the middleware tree
 polymaticDevtools.events("pointer");   // recent events, filtered
+polymaticDevtools.failures();          // handlers that threw, or whose promise was rejected
 polymaticDevtools.unmatched();         // events without handlers, and handlers without events
 polymaticDevtools.frame();             // handler time per frame
 polymaticDevtools.context("score");    // a value in the context
@@ -397,7 +419,7 @@ polymaticDevtools.config({
 
 Middlewares are shown by class name. In a minified build, give a middleware a `displayName` to keep it readable.
 
-To build your own tool, pass an `Inspector` to `inspect`: it is told when events are sent and delivered, how long each handler takes, and when middlewares are activated and deactivated.
+To build your own tool, pass an `Inspector` to `inspect`: it is told when events are sent and delivered, how long each handler takes, when handlers fail, and when middlewares are activated and deactivated.
 
 ### Choosing when to record
 
@@ -426,7 +448,7 @@ if (import.meta.env.DEV) {
 Tests and AI agents that drive an application in a browser, for example with Playwright, can read the devtools instead of screenshots and fixed delays. Every method returns plain data, and these are made for it:
 
 - `waitFor(type, options)` — resolves once the next event of that type has been delivered and its handlers have run. `after` also accepts one already delivered after an event id, `where` filters, and `timeout` (10 seconds by default) rejects.
-- `report()` — the tree, the last events, unmatched events and frame times, as JSON.
+- `report()` — failed handlers, the tree, the last events, unmatched events and frame times, as JSON. Look at `failures` first: an error the application's `Failure` handlers stopped doesn't reach the console.
 - `snapshot(path, depth)` — a copy of the context, or part of it, as JSON: signals become their values, and cycles and deep objects are cut off.
 - `config({ quiet: true })` — the methods return data without printing it.
 
@@ -443,7 +465,8 @@ const connect = await page.evaluate(
 );
 // connect.handlers: which middlewares handled it, how long each took, and which one stopped it
 
-const { unmatched } = await page.evaluate(() => polymaticDevtools.report());
+const { failures, unmatched } = await page.evaluate(() => polymaticDevtools.report());
+// failures: handlers that threw, with the message, stack and count
 // unmatched.noHandler: events no middleware handled, often a misspelt name
 const score = await page.evaluate(() => polymaticDevtools.snapshot("score"));
 ```

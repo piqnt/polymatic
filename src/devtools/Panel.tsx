@@ -105,11 +105,20 @@ function App(props: { recorder: Recorder; visible: boolean; onClose: () => void 
         <div class="header" onMouseDown={drag}>
           <span class="title">polymatic</span>
           <div class="tabs">
-            {TABS.map((t) => (
-              <button key={t.key} class={"tab" + (t.key === tab ? " active" : "")} onClick={() => setTab(t.key)}>
-                {t.title}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              // failures show on the Issues tab from any tab
+              const failed = t.key === "issues" ? recorder.failures.length : 0;
+              return (
+                <button
+                  key={t.key}
+                  class={"tab" + (t.key === tab ? " active" : "") + (failed ? " error" : "")}
+                  onClick={() => setTab(t.key)}
+                >
+                  {t.title}
+                  {failed ? " (" + failed + ")" : ""}
+                </button>
+              );
+            })}
           </div>
           <button class="close" title="Close (Alt+Shift+D)" onClick={props.onClose}>
             ×
@@ -227,6 +236,7 @@ function EventRow({ event: e, open, onToggle }: { event: EventRecord; open: bool
         <span class="name">{e.type}</span>
         <span class="muted">from {e.from}</span>
         <span class={"badge" + (e.handled === 0 ? " warn" : "")}>{String(e.handled ?? "…")}</span>
+        {e.handlers.some((handler) => handler.failed) && <span class="error">failed</span>}
         {stopped && <span class="stop">stopped by {stopped.middleware}</span>}
         <span class="muted right">{ms(total)}</span>
       </div>
@@ -239,6 +249,7 @@ function EventRow({ event: e, open, onToggle }: { event: EventRecord; open: bool
             <div key={i} class="handler">
               <span>{handler.middleware}</span>
               <span class="muted">{ms(handler.ms)}</span>
+              {handler.failed && <span class="error">threw</span>}
               {handler.stopped && <span class="stop">stopped</span>}
             </div>
           ))}
@@ -280,8 +291,21 @@ function FrameTab({ recorder }: { recorder: Recorder }) {
 
 function IssuesTab({ recorder }: { recorder: Recorder }) {
   const { noHandler, notSent } = recorder.unmatched();
+  const failures = recorder.failures.slice().reverse();
   return (
     <div class="content">
+      <div class="section">Failed handlers</div>
+      {!failures.length && <div class="empty">None</div>}
+      {failures.map((f) => (
+        <div key={f.middleware + " " + f.type + " " + f.message} class="row" title={f.stack ?? f.message}>
+          <span class="name error">{f.middleware}</span>
+          <span class="muted">handling {f.type}</span>
+          <span class="value">{f.message}</span>
+          <span class="muted right">
+            {f.stoppedBy ? "stopped by " + f.stoppedBy : "uncaught"} · {f.count}×
+          </span>
+        </div>
+      ))}
       <div class="section">Sent, but no middleware handled them</div>
       {!noHandler.length && <div class="empty">None</div>}
       {noHandler.map((item) => (
@@ -394,6 +418,7 @@ input:not([type]) { flex: 1; font: inherit; color: inherit; background: #15161a;
 .badge.warn { background: #45351f; }
 .unhandled .name { color: #ffb86b; }
 .stop { color: #ff8a8a; }
+.error, .name.error { color: #ff6b6b; }
 .time { color: #6b6e78; width: 52px; text-align: right; }
 .details { padding: 2px 6px 4px 64px; border-left: 2px solid #4a5d9e; margin-left: 6px; }
 .handler { display: flex; gap: 8px; }

@@ -8,10 +8,10 @@
 import { inspect } from "../Inspector";
 import { type Middleware } from "../Middleware";
 import { Panel } from "./Panel";
-import { type EventRecord, type FrameCost, Recorder, walk } from "./Recorder";
+import { type EventRecord, type FailureRecord, type FrameCost, Recorder, walk } from "./Recorder";
 import { ms, nameOf, summarize, toPlain, valueAt } from "./format";
 
-export type { EventRecord, FrameCost, HandlerRecord, LifecycleRecord } from "./Recorder";
+export type { EventRecord, FailureRecord, FrameCost, HandlerRecord, LifecycleRecord } from "./Recorder";
 
 /** Devtools settings, changed with `polymaticDevtools.config()` */
 export interface DevtoolsConfig {
@@ -63,6 +63,8 @@ export interface EventSummary {
   handled: number | undefined;
   /** the middleware that stopped it, if one did */
   stoppedBy?: string;
+  /** middlewares whose handler threw */
+  failed?: string[];
   /** total handler time, in ms */
   ms: number;
   payload: string;
@@ -73,6 +75,8 @@ export interface Report {
   installed: boolean;
   /** the id of the last event delivered; pass it to `waitFor(type, { after })` */
   lastEventId: number;
+  /** failed handlers, oldest first; look here first when something doesn't work */
+  failures: FailureRecord[];
   tree: TreeNode[];
   /** the last events, oldest first */
   events: EventSummary[];
@@ -110,11 +114,13 @@ export interface Devtools {
   tree(): TreeNode[];
   /** The last events, optionally only those whose type or sender contains `filter`; printed, and returned */
   events(filter?: string): EventRecord[];
+  /** Handlers that threw or whose promise was rejected, counted, oldest first; printed, and returned */
+  failures(): FailureRecord[];
   /** Events sent to no handler, and handlers for events not sent so far; printed, and returned */
   unmatched(): ReturnType<Recorder["unmatched"]>;
   /** Handler time per middleware for each frame event, over the last 60 frames; printed, and returned */
   frame(): Record<string, FrameCost[]>;
-  /** Everything at once, as plain data that JSON can hold: tree, last events, unmatched events, frame times */
+  /** Everything at once, as plain data that JSON can hold: failures, tree, last events, unmatched events, frame times */
   report(options?: { events?: number }): Report;
   /** Resolves with the next event of this type once its delivery ends, after its handlers ran */
   waitFor(type: string | { name: string }, options?: WaitOptions): Promise<EventRecord>;
@@ -174,6 +180,7 @@ function summary(e: EventRecord): EventSummary {
     from: e.from,
     handled: e.handled,
     stoppedBy: e.handlers.find((h) => h.stopped)?.middleware,
+    failed: e.handlers.some((h) => h.failed) ? e.handlers.filter((h) => h.failed).map((h) => h.middleware) : undefined,
     ms: Math.round(e.handlers.reduce((sum, h) => sum + h.ms, 0) * 1000) / 1000,
     payload: e.payload,
   };
@@ -220,7 +227,9 @@ export const polymaticDevtools: Devtools = {
 
     const stopListening = recorder.onDelivered((record) => {
       if (s.logPattern && s.logPattern.test(record.type)) {
-        const handlers = record.handlers.map((h) => h.middleware + (h.stopped ? " (stopped)" : "")).join(", ");
+        const handlers = record.handlers
+          .map((h) => h.middleware + (h.failed ? " (failed)" : h.stopped ? " (stopped)" : ""))
+          .join(", ");
         console.log(
           `%c${record.type}%c from ${record.from} → ${handlers || "no handler"}`,
           "color:#5b70b8;font-weight:bold",
@@ -312,6 +321,22 @@ export const polymaticDevtools: Devtools = {
     return events;
   },
 
+  failures() {
+    const s = active();
+    if (!s) return [];
+    const failures = s.recorder.failures.map((f) => ({ ...f }));
+    say.table(
+      failures.map((f) => ({
+        middleware: f.middleware,
+        handling: f.type,
+        error: f.message,
+        count: f.count,
+        "stopped by": f.stoppedBy ?? "uncaught",
+      }))
+    );
+    return failures;
+  },
+
   unmatched() {
     const s = active();
     if (!s) return { noHandler: [], notSent: [] };
@@ -337,7 +362,8 @@ export const polymaticDevtools: Devtools = {
   report(options?: { events?: number }) {
     const s = active();
     const empty = { noHandler: [], notSent: [] };
-    if (!s) return { installed: false, lastEventId: 0, tree: [], events: [], unmatched: empty, frame: {} };
+    if (!s)
+      return { installed: false, lastEventId: 0, failures: [], tree: [], events: [], unmatched: empty, frame: {} };
     const round = (n: number) => Math.round(n * 1000) / 1000;
     const costs = s.recorder.frameCosts();
     const frame: Record<string, FrameCost[]> = {};
@@ -347,6 +373,7 @@ export const polymaticDevtools: Devtools = {
     const report: Report = {
       installed: true,
       lastEventId: s.recorder.lastId,
+      failures: s.recorder.failures.map((f) => ({ ...f })),
       tree: buildTree(s),
       events: s.recorder.events.slice(-(options?.events ?? 20)).map(summary),
       unmatched: s.recorder.unmatched(),

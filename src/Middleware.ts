@@ -6,6 +6,7 @@
  */
 
 import { type EventType } from "./EventType";
+import { Failure } from "./Failure";
 import { inspector } from "./Inspector";
 
 /** @internal @hidden true while an event is passed up to the runtime, so only its sender is inspected */
@@ -185,6 +186,9 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    *
    * If an event handler function returns true, it will stop propagation to any other middlewares.
    *
+   * If it throws, or returns a promise that is rejected, the event is still delivered to the other
+   * middlewares, and the error goes to `Failure` handlers up the parent chain.
+   *
    * A middleware can have up to one handler for each event `type`.
    *
    * `type` is an event type, and the handler receives its payload type, or an event name.
@@ -220,12 +224,23 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
       if (typeof handler === "function") {
         handled++;
         const inspect = inspector();
-        if (!inspect?.handle) {
-          return handler.call(this, ev) === true;
+        const start = inspect?.handle ? performance.now() : 0;
+        let result: any;
+        let failed = false;
+        let error: unknown;
+        try {
+          result = handler.call(this, ev);
+        } catch (e) {
+          failed = true;
+          error = e;
         }
-        const start = performance.now();
-        const stop = handler.call(this, ev) === true;
-        inspect.handle(type, ev, this, performance.now() - start, stop);
+        const stop = result === true;
+        inspect?.handle?.(type, ev, this, performance.now() - start, stop);
+        if (failed) {
+          fail({ error, middleware: this, type, ev });
+        } else if (result && typeof result.then === "function") {
+          result.then(undefined, (e: unknown) => fail({ error: e, middleware: this, type, ev }));
+        }
         return stop;
       }
     }
@@ -266,6 +281,35 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   static activate<S extends object>(middleware: Middleware<S>, context: S) {
     return Runtime.activate(middleware, context);
   }
+}
+
+/**
+ * Send a failure up the parent chain from the middleware that failed, to `Failure` handlers, until
+ * one returns true. Report it as an uncaught error if none does.
+ */
+function fail(failure: Failure) {
+  let stoppedBy: Middleware<any> | null = null;
+  let m: any = failure.middleware.__parent;
+  while (m && !stoppedBy) {
+    const handler = m.activated && m.__handlers?.[Failure.name];
+    if (typeof handler === "function") {
+      try {
+        if (handler.call(m, failure) === true) stoppedBy = m;
+      } catch (e) {
+        // a failure handler that fails is reported, and the failure goes on up
+        report(e);
+      }
+    }
+    m = m.__parent;
+  }
+  inspector()?.failure?.(failure, stoppedBy);
+  if (!stoppedBy) report(failure.error);
+}
+
+function report(error: unknown) {
+  const reportError = (globalThis as any).reportError;
+  if (typeof reportError === "function") reportError(error);
+  else console.error(error);
 }
 
 export class Runtime<S = object> extends Middleware<S> {

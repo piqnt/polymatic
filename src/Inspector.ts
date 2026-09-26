@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import { type Failure } from "./Failure";
 import { type Middleware } from "./Middleware";
 
 /**
@@ -29,6 +30,12 @@ export interface Inspector {
 
   /** A middleware is being deactivated, before its deactivate handler runs. */
   deactivate?(middleware: Middleware<any>): void;
+
+  /**
+   * A handler threw, or its promise was rejected. `stoppedBy` is the middleware whose `Failure`
+   * handler stopped it, or null if none did and it is reported as an uncaught error.
+   */
+  failure?(failure: Failure, stoppedBy: Middleware<any> | null): void;
 }
 
 /**

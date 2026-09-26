@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import { Failure } from "../Failure";
 import { type Inspector } from "../Inspector";
 import { type Middleware } from "../Middleware";
 import { nameOf, summarize } from "./format";
@@ -14,6 +15,8 @@ export interface HandlerRecord {
   middleware: string;
   ms: number;
   stopped: boolean;
+  /** it threw; a rejected promise is only in `failures` */
+  failed?: boolean;
 }
 
 /** An event, from when it was sent to when its delivery ended */
@@ -31,6 +34,24 @@ export interface EventRecord {
   handlers: HandlerRecord[];
   /** how many handlers ran; unset while it is queued or being delivered */
   handled?: number;
+}
+
+/** Failures of one handler with the same message, counted */
+export interface FailureRecord {
+  /** the middleware whose handler failed */
+  middleware: string;
+  /** the event it was handling, or "activate" or "deactivate" */
+  type: string;
+  message: string;
+  stack?: string;
+  count: number;
+  /** when it first and last failed, in ms since the page loaded */
+  first: number;
+  last: number;
+  /** the middleware whose Failure handler stopped it last time, or null if it was reported as uncaught */
+  stoppedBy: string | null;
+  /** the id of the event it was handling last time, if it threw while the event was delivered */
+  eventId?: number;
 }
 
 export interface LifecycleRecord {
@@ -58,12 +79,15 @@ export interface RecorderOptions {
 
 const LIFECYCLE = new Set(["activate", "deactivate"]);
 const FRAMES_KEPT = 60;
+const FAILURES_KEPT = 100;
 
 /** Records what runtimes do, as an inspector */
 export class Recorder implements Inspector {
   readonly runtimes = new Set<Middleware<any>>();
   readonly events: EventRecord[] = [];
   readonly lifecycle: LifecycleRecord[] = [];
+  /** failed handlers, oldest first; a repeated failure is counted in its first record */
+  readonly failures: FailureRecord[] = [];
   /** how many times each event was sent */
   readonly sent = new Map<string, number>();
   /** how many times each event was delivered to no handler */
@@ -111,6 +135,7 @@ export class Recorder implements Inspector {
     this.sent.clear();
     this.unhandled.clear();
     this.frames.clear();
+    this.failures.length = 0;
   }
 
   // --- inspector
@@ -191,6 +216,44 @@ export class Recorder implements Inspector {
     if (this.lifecycle.length > this.maxEvents) this.lifecycle.shift();
   }
 
+  failure(failure: Failure, stoppedBy: Middleware<any> | null) {
+    const middleware = nameOf(failure.middleware);
+    const error: any = failure.error;
+    const message = error instanceof Error ? error.name + ": " + error.message : String(error);
+    const now = performance.now();
+
+    // a handler that threw while an event is delivered is the last one recorded for it
+    let eventId: number | undefined;
+    const current = this.current;
+    const last = current?.handlers[current.handlers.length - 1];
+    if (current && current.type === failure.type && last?.middleware === middleware) {
+      last.failed = true;
+      eventId = current.id;
+    }
+
+    let record = this.failures.find(
+      (f) => f.middleware === middleware && f.type === failure.type && f.message === message
+    );
+    if (!record) {
+      record = {
+        middleware,
+        type: failure.type,
+        message,
+        stack: error?.stack,
+        count: 0,
+        first: now,
+        last: now,
+        stoppedBy: null,
+      };
+      this.failures.push(record);
+      if (this.failures.length > FAILURES_KEPT) this.failures.shift();
+    }
+    record.count++;
+    record.last = now;
+    record.stoppedBy = stoppedBy ? nameOf(stoppedBy) : null;
+    record.eventId = eventId;
+  }
+
   // --- queries
 
   /** Average and worst handler time per middleware, over the last frames of each frame event */
@@ -221,7 +284,7 @@ export class Recorder implements Inspector {
       walk(runtime, (middleware) => {
         if (!middleware.activated) return;
         for (const type of Object.keys(middleware.__handlers)) {
-          if (LIFECYCLE.has(type) || this.sent.has(type)) continue;
+          if (LIFECYCLE.has(type) || type === Failure.name || this.sent.has(type)) continue;
           handlers.set(type, [...(handlers.get(type) ?? []), nameOf(middleware)]);
         }
       });
