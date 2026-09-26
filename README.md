@@ -227,10 +227,30 @@ Middlewares communicate by sending and receiving events. Use `emit` to send an e
 this.emit("game-over", { score: 21 });
 
 // in another middleware
-this.on("game-over", (ev) => {
-  console.log(ev.score);
+this.on("game-over", (data) => {
+  console.log(data.score);
 });
 ```
+
+In TypeScript you can define typed events. The payload is type-checked in `emit` and inferred in `on`, and your editor can find every place the event is sent or handled:
+
+```ts
+interface GameOverData {
+  score: number;
+}
+
+export const GameOverEvent = EventType.create<GameOverData>("game-over");
+
+// payload type is checked against GameOverData
+this.emit(GameOverEvent, { score: 21 });
+
+// data type is inferred as GameOverData
+this.on(GameOverEvent, (data) => {
+  console.log(data.score);
+});
+```
+
+A typed event uses its name on the wire, so it also reaches `on("game-over", …)` handlers.
 
 How events are delivered:
 
@@ -330,13 +350,19 @@ Every class the package exports, with the members you use:
 
 ```ts
 // Middleware — a unit of application logic
-class Middleware<S = object> {
+class Middleware<S = object> {        // S: the context it needs
   use(child: Middleware): void;        // add a child middleware; this context must provide what the child's needs
   unuse(child: Middleware): void;      // remove a child middleware
-  on(type: string, handler: (ev: any) => any): void;  // one handler per type, return true to stop propagation
-  emit(type: string, ev?: any): void;  // queued as a microtask, delivered to the whole application
+  on(type: string | EventType, handler: (ev: any) => any): void;  // one handler per type, return true to stop propagation
+  emit(type: string | EventType, ev?: any): void;  // queued as a microtask, delivered to the whole application
   get context(): S;                    // the shared context, only while activated
   get activated(): boolean;
+}
+
+// EventType — a typed event, used in place of an event name in on and emit
+class EventType<P> {
+  static create<P = void>(name: string): EventType<P>;
+  readonly name: string;
 }
 
 // Runtime — the root of the middleware tree

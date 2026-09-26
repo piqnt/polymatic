@@ -6,6 +6,7 @@
  */
 
 import { debug, watch } from "./internal/debug";
+import { type EventType } from "./EventType";
 
 /** @internal @hidden */
 const debugEvent = debug("middleware.event", (type: string) => {
@@ -15,9 +16,14 @@ const debugEvent = debug("middleware.event", (type: string) => {
 /** @internal @hidden */
 const debugMiddleware = debug("middleware.lifecycle");
 
-// todo: type this
 export type EventHandler = (ev?: any) => any;
 export type ContextSetter<S> = (context: S) => void;
+
+/** @internal @hidden the payload type of an event type; any for an event name */
+type PayloadOf<T> = T extends EventType<infer P> ? P : any;
+
+/** @internal @hidden the payload argument, optional for events without one */
+type EventArgs<P> = [P] extends [void | undefined] ? [ev?: P] : [ev: P];
 
 export interface MiddlewareInterface<S> {
   get activated(): boolean;
@@ -27,7 +33,7 @@ export interface MiddlewareInterface<S> {
   setContext(setter: ContextSetter<S>): void;
 
   on(type: string, handler: (ev: any) => any): void;
-  emit(type: string, ev: any): void;
+  emit(type: string, ev?: any): void;
 }
 
 export class Middleware<S = object> implements MiddlewareInterface<S> {
@@ -143,10 +149,13 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * If an event handler function returns true, it will stop propagation to any other middlewares.
    *
    * A middleware can have up to one handler for each event `type`.
+   *
+   * `type` is an event type, and the handler receives its payload type, or an event name.
    */
-  on(type: string, handler: (ev: any) => any): void {
-    if (this.__handlers[type]) throw Error(`Handler for ${type} already exists`);
-    this.__handlers[type] = handler;
+  on<T extends EventType<any> | string>(type: T, handler: (ev: PayloadOf<T>) => any): void {
+    const name = typeof type === "string" ? type : type.name;
+    if (this.__handlers[name]) throw Error(`Handler for ${name} already exists`);
+    this.__handlers[name] = handler;
   }
 
   /**
@@ -191,14 +200,17 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
    * Events are then recursively passed down to all active middlewares and their children.
    * 
    * If an event handler returns true, delivering the event is stopped.
+   *
+   * `type` is an event type, and `ev` must be its payload type, or an event name.
    */
-  emit(type: string, ev?: any): void {
+  emit<T extends EventType<any> | string>(type: T, ...[ev]: EventArgs<PayloadOf<T>>): void {
     if (!this.activated) return;
 
-    debugEvent(type, "↑", this.constructor.name, ev);
+    const name = typeof type === "string" ? type : (type as EventType<any>).name;
+    debugEvent(name, "↑", this.constructor.name, ev);
 
     if (this.__parent) {
-      this.__parent.emit(type, ev);
+      this.__parent.emit(name, ev);
     } else {
       console.error(Error("Not active!"));
     }
@@ -270,7 +282,8 @@ export class Runtime<S = object> extends Middleware<S> {
 
   private _microtask = Promise.resolve();
 
-  emit(name: string, ev?: any): void {
+  emit<T extends EventType<any> | string>(type: T, ...[ev]: EventArgs<PayloadOf<T>>): void {
+    const name = typeof type === "string" ? type : (type as EventType<any>).name;
     this._microtask.then(() => this._consume(name, ev));
   }
 
@@ -280,7 +293,7 @@ export class Runtime<S = object> extends Middleware<S> {
     manager._activate(context);
   }
 
-  static deactivate(middleware: Middleware) {
+  static deactivate(middleware: Middleware<any>) {
     if ("_deactivate" in middleware && typeof middleware._deactivate === "function") {
       middleware._deactivate();
       return true;
