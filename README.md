@@ -44,13 +44,13 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
 ```html
   <script type="module">
     // esm import, script type should be module
-    import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.2/+esm";
+    import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.3/+esm";
   </script>
 ```
 
 #### jsDelivr: UMD
 ```html
-  <script src="https://cdn.jsdelivr.net/npm/polymatic@0.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/polymatic@0.3"></script>
   <script>
     // global polymatic variable added via umd build
     const { Middleware, Runtime } = polymatic;
@@ -71,7 +71,7 @@ A complete application — copy this into an `.html` file and open it in a brows
 <p id="status">loading...</p>
 
 <script type="module">
-  import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.2/+esm";
+  import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.3/+esm";
 
   // context: state shared by every middleware
   class Game {
