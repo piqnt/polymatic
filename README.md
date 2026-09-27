@@ -13,6 +13,7 @@ Watermelon Game ([Play](https://piqnt.github.io/polymatic-example-watermelon/), 
 8-Ball Pool ([Play](https://eight-ball.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-eight-ball)) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
 Pinball ([Play](https://piqnt.github.io/polymatic-example-pinball/), [Source](https://github.com/piqnt/polymatic-example-pinball/)) - Pinball game with editable svg table design, with Polymatic and Planck/Box2D physics  
 Breakout ([Play](https://piqnt.github.io/polymatic-example-breakout/), [Source](https://github.com/piqnt/polymatic-example-breakout/)) - Polymatic, Pixi.js  
+Carrom ([Play](https://piqnt.github.io/polymatic-example-carrom/), [Source](https://github.com/piqnt/polymatic-example-carrom/)) - Polymatic, Planck, SVG  
 Game of Life ([Play](https://piqnt.github.io/polymatic-example-life/), [Source](https://github.com/piqnt/polymatic-example-life)) - Polymatic, Pixi.js  
 Air Traffic Control ([Play](https://piqnt.github.io/polymatic-example-traffic/), [Source](https://github.com/piqnt/polymatic-example-traffic)) - Polymatic, Pixi.js  
 Same Game ([Play](https://piqnt.github.io/polymatic-example-samegame/), [Source](https://github.com/piqnt/polymatic-example-samegame)) - Polymatic, Pixi.js  
@@ -25,13 +26,13 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
 
 ## Community
 
-#### [Discord](https://discord.gg/f4r7QWqaK4)
+#### [GitHub](https://github.com/piqnt/polymatic) - [Discord](https://discord.gg/f4r7QWqaK4)
 
-#### [GitHub](https://github.com/piqnt/polymatic)
+
 
 ## Install
 
-#### NPM
+### NPM
 ```bash
   npm install polymatic
 ```
@@ -40,7 +41,7 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
   import { Middleware, Runtime } from "polymatic";
 ```
 
-#### jsDelivr: ESM
+### ESM - jsDelivr
 ```html
   <script type="module">
     // esm import, script type should be module
@@ -48,7 +49,7 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
   </script>
 ```
 
-#### jsDelivr: UMD
+### UMD - jsDelivr
 ```html
   <script src="https://cdn.jsdelivr.net/npm/polymatic@0.3"></script>
   <script>
@@ -60,86 +61,6 @@ Fly ([Play](https://piqnt.github.io/polymatic-example-fly/), [Source](https://gi
 AI chat sandboxes, such as Claude, ChatGPT and Grok, only allow jsDelivr.
 
 The same files are also on unpkg and esm.sh, if jsDelivr is not reachable for you.
-
-## Quick Start
-
-A complete application — copy this into an `.html` file and open it in a browser:
-
-```html
-<!doctype html>
-<canvas id="view" width="300" height="200" style="border: 1px solid #ccc"></canvas>
-<p id="status">loading...</p>
-
-<script type="module">
-  import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.3/+esm";
-
-  // context: state shared by every middleware
-  class Game {
-    ball = { x: 40, y: 40, vx: 140, vy: 100, r: 10 };
-    bounces = 0;
-  }
-
-  // emits "frame-update" on every animation frame
-  class FrameLoop extends Middleware {
-    constructor() {
-      super();
-      this.on("activate", () => (this.timer = requestAnimationFrame(this.tick)));
-      this.on("deactivate", () => cancelAnimationFrame(this.timer));
-    }
-    tick = (now) => {
-      const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
-      this.last = now;
-      this.emit("frame-update", { dt });
-      this.timer = requestAnimationFrame(this.tick);
-    };
-  }
-
-  // game logic: moves the ball and emits "bounce" off the walls
-  class Physics extends Middleware {
-    constructor() {
-      super();
-      this.on("frame-update", (ev) => this.update(ev.dt));
-    }
-    update(dt) {
-      const ball = this.context.ball;
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
-      if (ball.x < ball.r || ball.x > 300 - ball.r) (ball.vx *= -1), this.emit("bounce");
-      if (ball.y < ball.r || ball.y > 200 - ball.r) (ball.vy *= -1), this.emit("bounce");
-    }
-  }
-
-  // rendering, and the bounce counter
-  class Renderer extends Middleware {
-    constructor() {
-      super();
-      this.canvas = document.getElementById("view").getContext("2d");
-      this.on("frame-update", () => this.draw());
-      this.on("bounce", () => (this.context.bounces += 1));
-    }
-    draw() {
-      const { ball, bounces } = this.context;
-      this.canvas.clearRect(0, 0, 300, 200);
-      this.canvas.beginPath();
-      this.canvas.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-      this.canvas.fill();
-      document.getElementById("status").textContent = `bounces: ${bounces}`;
-    }
-  }
-
-  // the entry middleware composes the application
-  class Main extends Middleware {
-    constructor() {
-      super();
-      this.use(new FrameLoop()); // events are delivered parents first, then
-      this.use(new Physics());   // children in the order they were added, so
-      this.use(new Renderer());  // physics runs before rendering each frame
-    }
-  }
-
-  Runtime.activate(new Main(), new Game());
-</script>
-```
 
 ## User Guide - 5 Minutes
 
@@ -153,6 +74,8 @@ A polymatic application is built on three core ideas:
 - **Context** — a single object shared by all middlewares in an application. Shared state and game entities live here.
 - **Events** — how middlewares communicate. An emitted event is delivered to all middlewares in the application.
 
+This guide builds a small application: balls bouncing around a canvas, with a bounce counter. The complete application is [docs/bounce-canvas.html](https://github.com/piqnt/polymatic/blob/main/docs/bounce-canvas.html), a single file that loads polymatic from jsDelivr: save it and open it in a browser to see it run. The code below is the same, with TypeScript types added.
+
 ### Middleware
 
 A middleware is a class that implements one part of your application, such as game logic, rendering, input, networking, or the frame-loop. To create a middleware extend the `Middleware` class:
@@ -162,18 +85,21 @@ class Main extends Middleware {
 }
 ```
 
-Middlewares are composed into a tree with the `use` method:
+Middlewares are composed into a tree with the `use` method. The bouncing balls have five middlewares: `FrameLoop` sends `"frame-update"` on every animation frame, `Physics` moves the balls and sends `"bounce"` when one hits a wall, `BounceCounter` counts the bounces, `Renderer` draws the balls and the count, and `Main` uses the other four:
 
 ```ts
-class Main extends Middleware {
+class Main extends Middleware<BounceContext> {
   constructor() {
     super();
     this.use(new FrameLoop());
-    this.use(new GameLogic());
+    this.use(new Physics());
+    this.use(new BounceCounter());
     this.use(new Renderer());
   }
 }
 ```
+
+The order matters: events are delivered to middlewares in tree order, so on each frame `Physics` moves the balls before `Renderer` draws them.
 
 You can call `use` at any time (not only in the constructor), and remove a child middleware with `unuse`.
 
@@ -183,74 +109,188 @@ The context is a single object shared by the entire application, used to store s
 
 Every middleware accesses the same object through `this.context` — it is shared by reference, so changes made by one middleware are immediately visible to all others. This is the primary way middlewares share data; events are for signaling, context is for state.
 
+The context of the bouncing balls holds the size of the area, the balls, and the bounce count:
+
 ```ts
-class GameContext {
-  score: number = 0;
-  fruits: Fruit[] = [];
+interface Ball {
+  position: { x: number, y: number };
+  velocity: { x: number, y: number };
+  radius: number;
+  color: string;
 }
 
-class GameLogic extends Middleware<GameContext> {
-  constructor() {
-    super();
-    this.on("collect-fruit", this.handleCollectFruit);
-  }
-
-  handleCollectFruit() {
-    this.context.score += 1;
-  }
+class BounceContext {
+  width = 300;
+  height = 200;
+  balls: Ball[] = [
+    {
+      position: { x: 40, y: 40 },
+      velocity: { x: 140, y: 100 },
+      radius: 10,
+      color: "#e4572e"
+    },
+    {
+      position: { x: 150, y: 120 },
+      velocity: { x: -90, y: 160 },
+      radius: 14,
+      color: "#29335c"
+    },
+    {
+      position: { x: 240, y: 60 },
+      velocity: { x: 110, y: -130 },
+      radius: 8,
+      color: "#f3a712"
+    },
+  ];
+  bounces = 0;
 }
 ```
 
-Note that `this.context` is only available while the middleware is activated.
+`Physics` moves the balls in the context on every frame:
+
+```ts
+class Physics extends Middleware<BounceContext> {
+  constructor() {
+    super();
+    this.on("frame-update", this.handleFrameUpdate);
+  }
+
+  handleFrameUpdate = ({ dt }: { dt: number }) => {
+    const { width, height, balls } = this.context;
+    for (const ball of balls) {
+      const { position, velocity, radius } = ball;
+      position.x += velocity.x * dt;
+      position.y += velocity.y * dt;
+      if (position.x < radius) {
+        position.x = radius;
+        velocity.x *= -1;
+        this.emit("bounce", { ball });
+      }
+      if (position.x > width - radius) {
+        position.x = width - radius;
+        velocity.x *= -1;
+        this.emit("bounce", { ball });
+      }
+      if (position.y < radius) {
+        position.y = radius;
+        velocity.y *= -1;
+        this.emit("bounce", { ball });
+      }
+      if (position.y > height - radius) {
+        position.y = height - radius;
+        velocity.y *= -1;
+        this.emit("bounce", { ball });
+      }
+    }
+  };
+}
+```
+
+Handlers are usually arrow functions assigned to fields, like `handleFrameUpdate`, so that `this` is the middleware when polymatic calls them.
+
+`Renderer` draws the same balls from the context, with the bounce count:
+
+```ts
+class Renderer extends Middleware<BounceContext> {
+  private canvas!: CanvasRenderingContext2D;
+  private status!: HTMLElement;
+
+  constructor() {
+    super();
+    this.on("activate", this.handleActivate);
+    this.on("frame-update", this.handleFrameUpdate);
+  }
+
+  handleActivate = () => {
+    const view = document.getElementById("view") as HTMLCanvasElement;
+    view.width = this.context.width;
+    view.height = this.context.height;
+    this.canvas = view.getContext("2d")!;
+    this.status = document.getElementById("status")!;
+  };
+
+  handleFrameUpdate = () => {
+    const { width, height, balls, bounces } = this.context;
+    this.canvas.clearRect(0, 0, width, height);
+    for (const ball of balls) {
+      this.canvas.fillStyle = ball.color;
+      this.canvas.beginPath();
+      this.canvas.arc(ball.position.x, ball.position.y, ball.radius, 0, Math.PI * 2);
+      this.canvas.fill();
+    }
+    this.status.textContent = `bounces: ${bounces}`;
+  };
+}
+```
+
+`Renderer` finds its canvas when it is activated, not when it is created, since the context, with the size to use, is only available while the middleware is activated.
 
 A middleware's context type declares what it needs. When a middleware uses a child, its own context type must provide everything the child's declares, with the same types, so TypeScript reports a missing or mistyped field where the child is added:
 
 ```ts
-class Score extends Middleware<{ score: number }> {}
+class Physics extends Middleware<{ width: number; height: number; balls: Ball[] }> {
+}
 
-class Game extends Middleware<{ score: number; level: number }> {
+class BounceCounter extends Middleware<{ bounces: number }> {
+}
+
+class Renderer extends Middleware<{ width: number; height: number; balls: Ball[]; bounces: number }> {
+}
+
+class Main extends Middleware<BounceContext> {
   constructor() {
     super();
-    this.use(new Score()); // ok: Game's context has score
+    this.use(new Physics()); // ok: BounceContext has balls
+    this.use(new BounceCounter()); // ok: BounceContext has bounces
+    this.use(new Renderer()); // ok: BounceContext has balls and bounces
   }
 }
 ```
+
+If `BounceContext` had no `bounces`, TypeScript would report it at `this.use(new BounceCounter())` and `this.use(new Renderer())`.
 
 A field that a child requires must be required in the parent's type too, even if another middleware sets it later.
 
 ### Events
 
-Middlewares communicate by sending and receiving events. Use `emit` to send an event, and `on` to register a handler (usually in the constructor):
+Middlewares communicate by sending and receiving events. Use `emit` to send an event, and `on` to register a handler (usually in the constructor). `Physics` sends `"bounce"` when a ball hits a wall, and `BounceCounter` counts them:
 
 ```ts
-// in one middleware
-this.emit("game-over", { score: 21 });
+class BounceCounter extends Middleware<BounceContext> {
+  constructor() {
+    super();
+    this.on("bounce", this.handleBounce);
+  }
 
-// in another middleware
-this.on("game-over", (data) => {
-  console.log(data.score);
-});
+  handleBounce = () => {
+    this.context.bounces += 1;
+  };
+}
 ```
 
-In TypeScript you can define typed events. The payload is type-checked in `emit` and inferred in `on`, and your editor can find every place the event is sent or handled:
+`Physics` doesn't know who listens: a middleware that plays a sound on each bounce could be added without changing it.
+
+In TypeScript you can define typed events. The payload is type-checked in `emit`, handlers are checked against it in `on`, and your editor can find every place the event is sent or handled:
 
 ```ts
-interface GameOverData {
-  score: number;
+export interface BounceData {
+  ball: Ball;
 }
 
-export const GameOverEvent = EventType.create<GameOverData>("game-over");
+export const Bounce = EventType.create<BounceData>("bounce");
 
-// payload type is checked against GameOverData
-this.emit(GameOverEvent, { score: 21 });
+// in Physics: the payload is checked
+this.emit(Bounce, { ball });
 
-// data type is inferred as GameOverData
-this.on(GameOverEvent, (data) => {
-  console.log(data.score);
-});
+// in BounceCounter: the handler is checked against the payload
+this.on(Bounce, this.handleBounce);
+
+handleBounce = (data: BounceData) => {
+  this.context.bounces += 1;
+};
 ```
 
-A typed event uses its name on the wire, so it also reaches `on("game-over", …)` handlers.
+A typed event uses its name on the wire, so it also reaches `on("bounce", …)` handlers.
 
 How events are delivered:
 
@@ -264,20 +304,39 @@ How events are delivered:
 To start a polymatic application, pass your entry middleware and the context object to `Runtime.activate`:
 
 ```ts
-Runtime.activate(new Main(), new GameContext());
+Runtime.activate(new Main(), new BounceContext());
 ```
 
 This activates `Main` and, recursively, all middlewares it uses. A middleware can access the context and send and receive events only while it is activated.
 
-When a middleware is activated it receives the `"activate"` event, and when it is deactivated it receives the `"deactivate"` event. Use them to initialize and clean up resources:
+When a middleware is activated it receives the `"activate"` event, and when it is deactivated it receives the `"deactivate"` event. Use them to initialize and clean up resources. `FrameLoop` starts requesting animation frames when it is activated, and stops when it is deactivated:
 
 ```ts
 class FrameLoop extends Middleware {
+  private timer = 0;
+  private last = 0;
+
   constructor() {
     super();
-    this.on("activate", () => this.start());
-    this.on("deactivate", () => this.stop());
+    this.on("activate", this.handleActivate);
+    this.on("deactivate", this.handleDeactivate);
   }
+
+  handleActivate = () => {
+    this.timer = requestAnimationFrame(this.tick);
+  };
+
+  handleDeactivate = () => {
+    cancelAnimationFrame(this.timer);
+  };
+
+  tick = (now: number) => {
+    // dt in seconds, at most 0.1, since the browser pauses animation frames in hidden tabs
+    const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
+    this.last = now;
+    this.emit("frame-update", { dt });
+    this.timer = requestAnimationFrame(this.tick);
+  };
 }
 ```
 
@@ -285,35 +344,22 @@ Middlewares added with `use` to an already activated middleware are activated im
 
 When a middleware is activated, its whole subtree is attached first, and then `"activate"` handlers are called, parents before children. So an activate handler can already use the middleware's children. When it is deactivated, `"deactivate"` handlers are called while the subtree is still attached.
 
-### Errors
+## Working with data
 
-A handler that throws, or returns a promise that is rejected, doesn't stop the application: the event is still delivered to the other middlewares, and activation carries on with the rest of the tree. The error is reported like any uncaught error, in the console and to `window.onerror`.
+Game state lives in the context as plain data, but middlewares often keep their own objects for it: a renderer has a sprite or an svg element for each entity, a physics middleware has a body. The bouncing balls come in two versions, which draw the same context in the two common ways: [docs/bounce-canvas.html](https://github.com/piqnt/polymatic/blob/main/docs/bounce-canvas.html) and [docs/bounce-svg.html](https://github.com/piqnt/polymatic/blob/main/docs/bounce-svg.html). Their other middlewares are the same.
 
-A middleware can handle failures in its subtree, like an error boundary, with a `Failure` handler:
+### Redraw every frame
 
-```ts
-class SoundManager extends Middleware<Context> {
-  constructor() {
-    super();
-    this.on(Failure, (failure) => {
-      // failure.error, failure.middleware, and failure.type and failure.ev, the event it was handling
-      this.showErrorScreen(failure.error);
-      return true;
-    });
-  }
-}
-```
+The simplest is to keep no objects at all, and draw the context from scratch on every frame. This is what the canvas version's `Renderer`, shown above, does: it clears the canvas and draws every ball. There is nothing to create or clean up, so nothing can get out of sync. This suits a canvas, and anything else that is drawn from scratch each frame.
 
-A failure goes up the parent chain from the middleware that failed, to the nearest `Failure` handler. If that returns `true`, the failure stops there; otherwise it goes on up, and is reported as uncaught if no handler stops it. The failed middleware stays in the tree: to remove it, call `this.unuse(failure.middleware)` from its parent.
+### Binder and Driver
 
-### Working with data: Binder and Driver
-
-Game entities are stored in the context as plain data, but middlewares often need their own representation of those entities: a rendering middleware creates a sprite or an svg element for each entity, a physics middleware creates a physics body. Binder and Driver keep those middleware-specific components in sync with the shared entities:
+The svg version keeps a `<circle>` element for each ball, and clicking adds a ball. When entities come and go, and each one needs its own object that is created once, updated, and removed, such as a sprite, an svg element or a physics body, polymatic includes Binder and Driver:
 
 - A **Driver** implements behavior for entities: it creates, updates, and removes a component for each entity that it handles.
 - A **Binder** tracks entities between updates: each time you pass it the current entities, it detects which entities are new, which still exist, and which were removed, and calls the driver functions accordingly.
 
-#### Driver
+### Driver
 
 A driver implements four functions:
 
@@ -324,48 +370,86 @@ A driver implements four functions:
 
 If `enter` returns `null`, the driver has no component for that entity, and `update` and `exit` are not called for it.
 
-We can create a driver by extending the `Driver` class, or using the `Driver.create` method:
+We can create a driver using the `Driver.create` method. The svg version's `Renderer` has a driver that creates, moves and removes a circle for each ball:
 
 ```ts
-const fruitRenderDriver = Driver.create<Fruit, SVGElement>({
-  filter: (entity) => entity.type === "fruit",
-  enter: (entity) => {
-    // create a component for the entity,
-    // for example an svg element, or a physics body
-    return component;
+ballDriver = Driver.create<Ball, SVGCircleElement>({
+  filter: () => true,
+  enter: (ball) => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("r", String(ball.radius));
+    circle.setAttribute("fill", ball.color);
+    this.view.append(circle);
+    return circle;
   },
-  update: (entity, component) => {
-    // sync the component with the entity,
-    // for example move the svg element to the entity position
+  update: (ball, circle) => {
+    circle.setAttribute("cx", String(ball.position.x));
+    circle.setAttribute("cy", String(ball.position.y));
   },
-  exit: (entity, component) => {
-    // clean up the component,
-    // for example remove the svg element
+  exit: (ball, circle) => {
+    circle.remove();
   },
 });
 ```
 
-#### Binder
+### Binder
 
-A binder needs a `key` function that uniquely identifies entities between updates, and a list of drivers. We can create a binder by extending the `Binder` class, or using the `Binder.create` method:
+A binder needs a `key` function that uniquely identifies entities between updates, and a list of drivers. We can create a binder using the `Binder.create` method. In the svg version, each ball has an `id` for its key:
 
 ```ts
-const renderBinder = Binder.create<Fruit>({
-  key: (entity) => entity.id,
-  drivers: [fruitRenderDriver],
+binder = Binder.create<Ball>({
+  key: (ball) => ball.id,
+  drivers: [this.ballDriver],
 });
 ```
 
 Keys must be non-empty strings, and unique within each data pass. Entities with an invalid or duplicate key are ignored with a warning. The key of an entity should not change while it is in the data.
 
-Pass the current entities to the binder, and it will call the driver functions for entities that entered, updated, or exited since the last call:
+Pass the current entities to the binder, and it will call the driver functions for entities that entered, updated, or exited since the last call. Passing no entities removes all the components:
 
 ```ts
-// for example on every frame
-this.on("frame-update", () => {
-  renderBinder.setData(this.context.fruits);
-});
+handleFrameUpdate = () => {
+  this.binder.setData(this.context.balls);
+};
+
+handleDeactivate = () => {
+  this.binder.setData([]);
+};
 ```
+
+A middleware usually has one binder, with one driver for each kind of entity it handles. A renderer and a physics middleware each have their own binder for the same entities, so neither knows about the other.
+
+## Errors
+
+A handler that throws, or returns a promise that is rejected, doesn't stop the application: the event is still delivered to the other middlewares, and activation carries on with the rest of the tree. The error is reported like any uncaught error, in the console and to `window.onerror`.
+
+A middleware can handle failures in its subtree, like an error boundary, with a `Failure` handler. Say `Main` also uses a `Sound` middleware that plays a sound on each bounce. Sound is a nice extra, so if it fails, `Main` reports the error to the server, and removes `Sound` so the game goes on without it:
+
+```ts
+class Main extends Middleware<BounceContext> {
+  constructor() {
+    super();
+    this.use(new FrameLoop());
+    this.use(new Physics());
+    this.use(new BounceCounter());
+    this.use(new Sound());
+    this.use(new Renderer());
+
+    this.on(Failure, this.handleFailure);
+  }
+
+  handleFailure = (failure: Failure) => {
+    // failure.error, failure.middleware, and failure.type and failure.ev, the event it was handling
+    navigator.sendBeacon("/errors", String(failure.error));
+    if (failure.middleware instanceof Sound) this.unuse(failure.middleware);
+    return true;
+  };
+}
+```
+
+Even without the `Failure` handler, a failing `Sound` doesn't stop the game: `BounceCounter` still receives every `"bounce"`, and the error is reported in the console.
+
+A failure goes up the parent chain from the middleware that failed, to the nearest `Failure` handler, so a middleware's `Failure` handler handles its children's failures, not its own. If that returns `true`, the failure stops there; otherwise it goes on up, and is reported as uncaught if no handler stops it. The failed middleware stays in the tree unless it is removed, as `Main` does here.
 
 ## Debugging
 

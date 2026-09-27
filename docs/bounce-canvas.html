@@ -1,0 +1,131 @@
+<!doctype html>
+<canvas id="view" style="border: 1px solid #ccc"></canvas>
+<p id="status">loading...</p>
+<p>Press Alt+Shift+D for the polymatic devtools.</p>
+
+<script type="module">
+  import { Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.3/+esm";
+
+  // devtools: press Alt+Shift+D for the panel, or use `polymaticDevtools` in the browser console
+  import "https://cdn.jsdelivr.net/npm/polymatic@0.3/dist/devtools-install.js";
+
+  // context: state shared by every middleware
+  class BounceContext {
+    width = 300;
+    height = 200;
+    balls = [
+      { position: { x: 40, y: 40 }, velocity: { x: 140, y: 100 }, radius: 10, color: "#e4572e" },
+      { position: { x: 150, y: 120 }, velocity: { x: -90, y: 160 }, radius: 14, color: "#29335c" },
+      { position: { x: 240, y: 60 }, velocity: { x: 110, y: -130 }, radius: 8, color: "#f3a712" },
+    ];
+    bounces = 0;
+  }
+
+  // emits "frame-update" on every animation frame
+  class FrameLoop extends Middleware {
+    constructor() {
+      super();
+      this.on("activate", this.handleActivate);
+      this.on("deactivate", this.handleDeactivate);
+    }
+    handleActivate = () => {
+      this.timer = requestAnimationFrame(this.tick);
+    };
+    handleDeactivate = () => {
+      cancelAnimationFrame(this.timer);
+    };
+    tick = (now) => {
+      const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
+      this.last = now;
+      this.emit("frame-update", { dt });
+      this.timer = requestAnimationFrame(this.tick);
+    };
+  }
+
+  // game logic: moves the balls, and emits "bounce" when one hits a wall
+  class Physics extends Middleware {
+    constructor() {
+      super();
+      this.on("frame-update", this.handleFrameUpdate);
+    }
+    handleFrameUpdate = ({ dt }) => {
+      const { width, height, balls } = this.context;
+      for (const ball of balls) {
+        const { position, velocity, radius } = ball;
+        position.x += velocity.x * dt;
+        position.y += velocity.y * dt;
+        if (position.x < radius) {
+          position.x = radius;
+          velocity.x *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.x > width - radius) {
+          position.x = width - radius;
+          velocity.x *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.y < radius) {
+          position.y = radius;
+          velocity.y *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.y > height - radius) {
+          position.y = height - radius;
+          velocity.y *= -1;
+          this.emit("bounce", { ball });
+        }
+      }
+    };
+  }
+
+  // game logic: counts the bounces
+  class BounceCounter extends Middleware {
+    constructor() {
+      super();
+      this.on("bounce", this.handleBounce);
+    }
+    handleBounce = () => {
+      this.context.bounces += 1;
+    };
+  }
+
+  // rendering: draws the balls and the bounce count on a canvas, from scratch on every frame
+  class Renderer extends Middleware {
+    constructor() {
+      super();
+      this.on("activate", this.handleActivate);
+      this.on("frame-update", this.handleFrameUpdate);
+    }
+    handleActivate = () => {
+      const view = document.getElementById("view");
+      view.width = this.context.width;
+      view.height = this.context.height;
+      this.canvas = view.getContext("2d");
+      this.status = document.getElementById("status");
+    };
+    handleFrameUpdate = () => {
+      const { width, height, balls, bounces } = this.context;
+      this.canvas.clearRect(0, 0, width, height);
+      for (const ball of balls) {
+        this.canvas.fillStyle = ball.color;
+        this.canvas.beginPath();
+        this.canvas.arc(ball.position.x, ball.position.y, ball.radius, 0, Math.PI * 2);
+        this.canvas.fill();
+      }
+      this.status.textContent = `bounces: ${bounces}`;
+    };
+  }
+
+  // the entry middleware composes the application
+  class Main extends Middleware {
+    constructor() {
+      super();
+      this.use(new FrameLoop());     // events are delivered parents first, then
+      this.use(new Physics());       // children in the order they were added, so
+      this.use(new BounceCounter()); // physics runs before rendering each frame
+      this.use(new Renderer());
+    }
+  }
+
+  Runtime.activate(new Main(), new BounceContext());
+</script>

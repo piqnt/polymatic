@@ -50,7 +50,8 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "docs"
   ],
   "devDependencies": {
     "@changesets/cli": "^2.27.12",

@@ -1,0 +1,181 @@
+<!doctype html>
+<svg id="view" style="border: 1px solid #ccc"></svg>
+<p id="status">loading...</p>
+<p>Click to add a ball. Press Alt+Shift+D for the polymatic devtools.</p>
+
+<script type="module">
+  import { Binder, Driver, Middleware, Runtime } from "https://cdn.jsdelivr.net/npm/polymatic@0.3/+esm";
+
+  // devtools: press Alt+Shift+D for the panel, or use `polymaticDevtools` in the browser console
+  import "https://cdn.jsdelivr.net/npm/polymatic@0.3/dist/devtools-install.js";
+
+  // context: state shared by every middleware
+  class BounceContext {
+    width = 300;
+    height = 200;
+    balls = [
+      { id: "1", position: { x: 40, y: 40 }, velocity: { x: 140, y: 100 }, radius: 10, color: "#e4572e" },
+      { id: "2", position: { x: 150, y: 120 }, velocity: { x: -90, y: 160 }, radius: 14, color: "#29335c" },
+      { id: "3", position: { x: 240, y: 60 }, velocity: { x: 110, y: -130 }, radius: 8, color: "#f3a712" },
+    ];
+    bounces = 0;
+  }
+
+  // emits "frame-update" on every animation frame
+  class FrameLoop extends Middleware {
+    constructor() {
+      super();
+      this.on("activate", this.handleActivate);
+      this.on("deactivate", this.handleDeactivate);
+    }
+    handleActivate = () => {
+      this.timer = requestAnimationFrame(this.tick);
+    };
+    handleDeactivate = () => {
+      cancelAnimationFrame(this.timer);
+    };
+    tick = (now) => {
+      const dt = this.last ? Math.min((now - this.last) / 1000, 0.1) : 0;
+      this.last = now;
+      this.emit("frame-update", { dt });
+      this.timer = requestAnimationFrame(this.tick);
+    };
+  }
+
+  // game logic: moves the balls, and emits "bounce" when one hits a wall
+  class Physics extends Middleware {
+    constructor() {
+      super();
+      this.on("frame-update", this.handleFrameUpdate);
+    }
+    handleFrameUpdate = ({ dt }) => {
+      const { width, height, balls } = this.context;
+      for (const ball of balls) {
+        const { position, velocity, radius } = ball;
+        position.x += velocity.x * dt;
+        position.y += velocity.y * dt;
+        if (position.x < radius) {
+          position.x = radius;
+          velocity.x *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.x > width - radius) {
+          position.x = width - radius;
+          velocity.x *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.y < radius) {
+          position.y = radius;
+          velocity.y *= -1;
+          this.emit("bounce", { ball });
+        }
+        if (position.y > height - radius) {
+          position.y = height - radius;
+          velocity.y *= -1;
+          this.emit("bounce", { ball });
+        }
+      }
+    };
+  }
+
+  // game logic: counts the bounces
+  class BounceCounter extends Middleware {
+    constructor() {
+      super();
+      this.on("bounce", this.handleBounce);
+    }
+    handleBounce = () => {
+      this.context.bounces += 1;
+    };
+  }
+
+  // input: adds a ball where the player clicks
+  class AddBall extends Middleware {
+    nextId = 4;
+    constructor() {
+      super();
+      this.on("activate", this.handleActivate);
+      this.on("deactivate", this.handleDeactivate);
+    }
+    handleActivate = () => {
+      this.view = document.getElementById("view");
+      this.view.addEventListener("click", this.handleClick);
+    };
+    handleDeactivate = () => {
+      this.view.removeEventListener("click", this.handleClick);
+    };
+    handleClick = (event) => {
+      const angle = Math.random() * Math.PI * 2;
+      this.context.balls.push({
+        id: String(this.nextId++),
+        position: { x: event.offsetX, y: event.offsetY },
+        velocity: { x: Math.cos(angle) * 150, y: Math.sin(angle) * 150 },
+        radius: 6 + Math.random() * 8,
+        color: `hsl(${Math.random() * 360}, 60%, 50%)`,
+      });
+    };
+  }
+
+  // rendering: keeps an svg circle for each ball, with a binder
+  class Renderer extends Middleware {
+    // creates, moves and removes a circle for each ball
+    ballDriver = Driver.create({
+      filter: () => true,
+      enter: (ball) => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("r", ball.radius);
+        circle.setAttribute("fill", ball.color);
+        this.view.append(circle);
+        return circle;
+      },
+      update: (ball, circle) => {
+        circle.setAttribute("cx", ball.position.x);
+        circle.setAttribute("cy", ball.position.y);
+      },
+      exit: (ball, circle) => {
+        circle.remove();
+      },
+    });
+
+    // tracks the balls by id, and calls the driver for balls that came, stayed or went
+    binder = Binder.create({
+      key: (ball) => ball.id,
+      drivers: [this.ballDriver],
+    });
+
+    constructor() {
+      super();
+      this.on("activate", this.handleActivate);
+      this.on("deactivate", this.handleDeactivate);
+      this.on("frame-update", this.handleFrameUpdate);
+    }
+    handleActivate = () => {
+      this.view = document.getElementById("view");
+      this.view.setAttribute("width", this.context.width);
+      this.view.setAttribute("height", this.context.height);
+      this.status = document.getElementById("status");
+    };
+    handleDeactivate = () => {
+      // no balls: the binder removes every circle
+      this.binder.setData([]);
+    };
+    handleFrameUpdate = () => {
+      this.binder.setData(this.context.balls);
+      this.status.textContent = `balls: ${this.context.balls.length}, bounces: ${this.context.bounces}`;
+    };
+  }
+
+  // the entry middleware composes the application
+  class Main extends Middleware {
+    constructor() {
+      super();
+      this.use(new FrameLoop());     // events are delivered parents first, then
+      this.use(new Physics());       // children in the order they were added, so
+      this.use(new BounceCounter()); // physics runs before rendering each frame
+      this.use(new AddBall());
+      this.use(new Renderer());
+    }
+  }
+
+  Runtime.activate(new Main(), new BounceContext());
+</script>
