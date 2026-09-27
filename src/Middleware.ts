@@ -15,6 +15,17 @@ let bubbling = false;
 /** @internal @hidden how many handlers ran for the event being delivered, for the inspector */
 let handled = 0;
 
+/**
+ * @internal @hidden The index to go on from after visiting `child` at `i`, when a handler may have
+ * removed middlewares from `children`, for example with `unuse`, so the ones after it are not skipped.
+ */
+function next(children: Middleware<any>[], i: number, child: Middleware<any>) {
+  if (children[i] === child) return i;
+  const at = children.indexOf(child);
+  // removed: the next one is at i now
+  return at >= 0 ? at : i - 1;
+}
+
 export type EventHandler = (ev?: any) => any;
 export type ContextSetter<S> = (context: S) => void;
 
@@ -44,6 +55,8 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
   __parent: MiddlewareInterface<S> = null;
   /** @internal @hidden attached, activate handler not called yet */
   __pendingActivate = false;
+  /** @internal @hidden deactivate handler called, not detached yet */
+  __deactivated = false;
 
   get activated() {
     return this.__parent ? this.__parent.activated : false;
@@ -119,6 +132,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     }
     this.__parent = parent;
     this.__pendingActivate = true;
+    this.__deactivated = false;
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__attach(this);
     }
@@ -133,22 +147,28 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     inspector()?.activate?.(this);
     this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
-      this.__children[i].__activate();
+      const child = this.__children[i];
+      child.__activate();
+      i = next(this.__children, i, child);
     }
   }
 
   /** @internal @hidden */
   __deactivate() {
-    if (!this.__parent) {
+    // a deactivate handler that removes its own middleware deactivates it again
+    if (!this.__parent || this.__deactivated) {
       return;
     }
+    this.__deactivated = true;
     // an activate handler that has not run yet has nothing to undo
     if (!this.__pendingActivate) {
       inspector()?.deactivate?.(this);
       this._handle("deactivate");
     }
     for (let i = 0; i < this.__children.length; i++) {
-      this.__children[i].__deactivate();
+      const child = this.__children[i];
+      child.__deactivate();
+      i = next(this.__children, i, child);
     }
   }
 
@@ -161,6 +181,7 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
       this.__children[i].__detach();
     }
     this.__pendingActivate = false;
+    this.__deactivated = false;
     this.__parent = null;
   }
 
@@ -207,8 +228,10 @@ export class Middleware<S = object> implements MiddlewareInterface<S> {
     if (stop) return true;
 
     for (let i = 0; i < this.__children.length; i++) {
-      const stop = this.__children[i]._consume(type, ev);
+      const child = this.__children[i];
+      const stop = child._consume(type, ev);
       if (stop) return true;
+      i = next(this.__children, i, child);
     }
     return false;
   }
@@ -313,6 +336,9 @@ function report(error: unknown) {
 }
 
 export class Runtime<S = object> extends Middleware<S> {
+  /** @hidden the name debugging tools show, which survives minification */
+  displayName = "Runtime";
+
   /** @internal @hidden */
   __handlers: Record<string, EventHandler> = {};
   /** @internal @hidden */
@@ -337,7 +363,9 @@ export class Runtime<S = object> extends Middleware<S> {
     inspector()?.activate?.(this);
     this._handle("activate");
     for (let i = 0; i < this.__children.length; i++) {
-      this.__children[i].__activate();
+      const child = this.__children[i];
+      child.__activate();
+      i = next(this.__children, i, child);
     }
   }
 
@@ -349,7 +377,9 @@ export class Runtime<S = object> extends Middleware<S> {
     inspector()?.deactivate?.(this);
     this._handle("deactivate");
     for (let i = 0; i < this.__children.length; i++) {
-      this.__children[i].__deactivate();
+      const child = this.__children[i];
+      child.__deactivate();
+      i = next(this.__children, i, child);
     }
     for (let i = 0; i < this.__children.length; i++) {
       this.__children[i].__detach();
