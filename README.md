@@ -10,7 +10,9 @@ Six ([Play](https://piqnt.com/six/), [Source](https://github.com/piqnt/polymatic
 Ocean ([Play](https://piqnt.com/ocean/), [Source](https://github.com/piqnt/polymatic-example-ocean/)) - Ocean diving runner game, made with Polymatic, Stage.js  
 Tile Box ([Play](https://piqnt.com/box/), [Source](https://github.com/piqnt/polymatic-example-tilebox)) - Polymatic, Pixi.js  
 Watermelon Game ([Play](https://piqnt.github.io/polymatic-example-watermelon/), [Source](https://github.com/piqnt/polymatic-example-watermelon)) - Polymatic, Planck/Box2D, Pixi.js  
-8-Ball Pool ([Play](https://eight-ball.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-eight-ball)) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, SVG  
+8-Ball Pool ([Play](https://eight-ball.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-eight-ball)) - Multiplayer including server and client implementation with Socket.io, Planck/Box2D, Pixi.js  
+Soccer ([Play](https://soccer.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-soccer)) - Multiplayer button football with editable svg field design, Socket.io, Planck/Box2D, Pixi.js  
+Shuffle ([Play](https://shuffle.piqnt.com/), [Source](https://github.com/piqnt/polymatic-example-shuffle)) - Multiplayer table shuffleboard, Socket.io, Planck/Box2D, Pixi.js  
 Pinball ([Play](https://piqnt.github.io/polymatic-example-pinball/), [Source](https://github.com/piqnt/polymatic-example-pinball/)) - Pinball game with editable svg table design, with Polymatic and Planck/Box2D physics  
 Breakout ([Play](https://piqnt.github.io/polymatic-example-breakout/), [Source](https://github.com/piqnt/polymatic-example-breakout/)) - Polymatic, Pixi.js  
 Carrom ([Play](https://piqnt.github.io/polymatic-example-carrom/), [Source](https://github.com/piqnt/polymatic-example-carrom/)) - Polymatic, Planck, SVG  
