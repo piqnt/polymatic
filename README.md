@@ -299,6 +299,7 @@ How events are delivered:
 
 - **Delivered to the entire application** — an emitted event first goes up to the runtime at the root, then is passed down to every activated middleware in the tree, in tree order (parents before children). Any middleware can listen to any event, regardless of which middleware emitted it — including the emitter itself.
 - **Queued, but delivered in the same frame** — `emit` does not call handlers immediately. The event is queued and delivered asynchronously, as soon as the current synchronous code finishes — still within the same frame, before the browser renders or the next `requestAnimationFrame` fires. This means the code following an `emit` call always runs before any handler receives the event.
+- **Delivered at once with `Runtime.flush`** — `Runtime.flush(middleware)` delivers the events queued in that middleware's application now, and the events their handlers send, until none is left. A headless simulation, such as a game's server stepping its physics many times in a row, emits a step and flushes it, with no `await` between steps.
 - **One handler per event type** — each middleware can register only one handler for a given event name (`on` throws if a handler already exists).
 - **Stopping propagation** — if a handler returns `true`, the event is not passed to any further middlewares.
 
@@ -585,6 +586,7 @@ class EventType<P> {
 class Runtime<S = object> extends Middleware<S> {
   static activate<S extends object>(middleware: Middleware<S>, context: S): void;
   static deactivate(middleware: Middleware): boolean;
+  static flush(middleware: Middleware): boolean;  // deliver the queued events now, until none is left
 }
 
 // Driver — creates, updates and removes a component for each entity it handles

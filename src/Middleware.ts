@@ -408,11 +408,28 @@ export class Runtime<S = object> extends Middleware<S> {
   }
 
   private _microtask = Promise.resolve();
+  /** events emitted and not yet delivered, oldest first */
+  private _queue: { name: string; ev: any }[] = [];
 
   emit<T extends EventType<any> | string>(type: T, ...[ev]: EventArgs<PayloadOf<T>>): void {
     const name = typeof type === "string" ? type : (type as EventType<any>).name;
     if (!bubbling) inspector()?.emit?.(name, ev, this);
-    this._microtask.then(() => this.__dispatch(name, ev));
+    const queued = { name, ev };
+    this._queue.push(queued);
+    this._microtask.then(() => {
+      // a flush delivered it already
+      if (this._queue[0] !== queued) return;
+      this._queue.shift();
+      this.__dispatch(name, ev);
+    });
+  }
+
+  /** Delivers every queued event now, and the events they send, until none is left. */
+  flush() {
+    while (this._queue.length) {
+      const { name, ev } = this._queue.shift()!;
+      this.__dispatch(name, ev);
+    }
   }
 
   /** @internal @hidden delivers a queued event down the tree */
@@ -438,6 +455,19 @@ export class Runtime<S = object> extends Middleware<S> {
     const manager = new Runtime<S>();
     manager.use(middleware);
     manager._activate(context);
+  }
+
+  /**
+   * Delivers the events queued in the runtime of `middleware` now, and the events they send, until none is left,
+   * instead of on the next microtask. Lets a caller run the application synchronously, for example a headless
+   * simulation stepped many times in a row. Returns false when `middleware` is not activated.
+   */
+  static flush(middleware: Middleware<any>) {
+    let root: any = middleware;
+    while (root && !(root instanceof Runtime)) root = root.__parent;
+    if (!root || !root.activated) return false;
+    root.flush();
+    return true;
   }
 
   static deactivate(middleware: Middleware<any>) {
